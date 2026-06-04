@@ -25,6 +25,7 @@ body{
   background:var(--cream); color:var(--ink); line-height:1.5;
   min-height:100dvh; padding-bottom:92px; -webkit-font-smoothing:antialiased;
   font-weight:500;
+  touch-action:manipulation;   /* fjerner dobbelttrykk-zoom på mobil, beholder kniping */
 }
 .wrap{max-width:680px;margin:0 auto;padding:0 16px}
 .serif{font-family:'EB Garamond',Georgia,serif;font-style:italic;font-weight:400}
@@ -227,12 +228,24 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
   <section id="view-tipp">
     <!-- Registrering -->
     <div id="reg" class="namebar">
-      <div class="sec"><h2>Bli med</h2><span class="note">registrer deg</span></div>
-      <div class="card">
-        <div class="field"><label class="fld" for="rName">Navn</label><input class="txt" id="rName" type="text" autocomplete="name" placeholder="Fornavn Etternavn" maxlength="40"></div>
-        <div class="field"><label class="fld" for="rPhone">Mobilnummer</label><input class="txt" id="rPhone" type="tel" autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="8 siffer"></div>
-        <button id="regBtn" class="btn btn-primary">Registrer / logg inn</button>
-        <div class="hint">Mobilnummeret er din innlogging. Bruker du et nummer som allerede er registrert, hentes tipset ditt opp så du kan fortsette.</div>
+      <!-- LOGG INN (førstevalg) -->
+      <div id="viewLogin">
+        <div class="sec"><h2>Logg inn</h2><span class="note">med mobilnummer</span></div>
+        <div class="card">
+          <div class="field"><label class="fld" for="liPhone">Mobilnummer</label><input class="txt" id="liPhone" type="tel" autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="8 siffer"></div>
+          <button id="loginBtn" class="btn btn-primary">Logg inn</button>
+          <div class="hint">Ny her? <button type="button" id="toReg" class="linkbtn">Registrer deg</button></div>
+        </div>
+      </div>
+      <!-- REGISTRER DEG -->
+      <div id="viewReg" class="hidden">
+        <div class="sec"><h2>Registrer deg</h2><span class="note">navn + mobil</span></div>
+        <div class="card">
+          <div class="field"><label class="fld" for="rName">Navn</label><input class="txt" id="rName" type="text" autocomplete="name" placeholder="Fornavn Etternavn" maxlength="40"></div>
+          <div class="field"><label class="fld" for="rPhone">Mobilnummer</label><input class="txt" id="rPhone" type="tel" autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="8 siffer"></div>
+          <button id="regBtn" class="btn btn-primary">Registrer deg</button>
+          <div class="hint">Navnet huskes på mobilnummeret. Allerede registrert? <button type="button" id="toLogin" class="linkbtn">Logg inn</button></div>
+        </div>
       </div>
     </div>
 
@@ -275,9 +288,15 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
   <section id="view-admin" class="hidden">
     <div class="sec"><h2>Arrangør</h2></div>
     <div id="gate" class="card" style="padding:16px">
-      <div class="hint" style="margin:0 0 12px">Legg inn fasit, åpne sluttspillet og se deltakerlisten.</div>
-      <div class="field"><input class="txt" id="adminInput" type="password" placeholder="Arrangørkode"></div>
-      <button id="adminBtn" class="btn btn-ghost">Lås opp</button>
+      <div class="hint" id="gateHint" style="margin:0 0 12px">Legg inn fasit, åpne sluttspillet og se deltakerlisten.</div>
+      <div id="gateAuth" class="hidden">
+        <div class="field"><input class="txt" id="adminEmail" type="email" autocomplete="username" inputmode="email" placeholder="Arrangør e-post"></div>
+        <div class="field"><input class="txt" id="adminPass" type="password" autocomplete="current-password" placeholder="Passord"></div>
+      </div>
+      <div id="gateCode">
+        <div class="field"><input class="txt" id="adminInput" type="password" placeholder="Kode (kun forhåndsvisning)"></div>
+      </div>
+      <button id="adminBtn" class="btn btn-ghost">Logg inn</button>
     </div>
 
     <div id="adminPanel" class="hidden">
@@ -288,6 +307,14 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
         <button data-set="done">Avsluttet</button>
       </div>
       <div class="hint">«Gruppespill» = del 1 åpen. «Sluttspill» = del 1 låses, del 2 åpnes. «Avsluttet» = alt låst.</div>
+
+      <div class="sec"><h2 style="font-size:16px">Hent resultater automatisk</h2><span class="note">football-data.org</span></div>
+      <div class="card" style="padding:16px">
+        <div class="hint" style="margin:0 0 10px">Når gruppespillet er ferdig: hent 1.- og 2.-plass i hver gruppe (gruppefasit = poengene) og lagene i sluttspillet automatisk. Kontrollér i feltene under etterpå.</div>
+        <div class="field"><label class="fld">football-data.org token</label><input class="txt" id="fdToken" type="text" placeholder="lagres kun i din nettleser"></div>
+        <button id="importBtn" class="btn btn-primary btn-sm">⬇️ Hent resultater &amp; sluttspill-lag</button>
+        <div class="hint" id="importNote" style="margin-top:8px"></div>
+      </div>
 
       <div class="sec"><h2 style="font-size:16px">Fasit gruppespill</h2><span class="note">lag som gikk videre</span></div>
       <div id="adminGroups"></div>
@@ -317,11 +344,11 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 
       <div class="sec"><h2 style="font-size:16px">SMS-påminnelser</h2><span class="note" id="remCount"></span></div>
       <div class="card" style="padding:16px">
-        <div class="hint" style="margin:0 0 12px">SMS sendes via en Supabase Edge Function – <b>Sveve-passordet ligger trygt på serveren</b>, ikke i nettsiden. «Send nå» sender til alle (eller de som mangler). De faste, automatiske SMS-ene (11. juni kl. 14:00 + 10 t før hver sluttspillkamp) styres av samme funksjon via en planlagt jobb (cron).</div>
-        <div class="koadd" style="margin-bottom:12px;display:none">
+        <div class="hint" style="margin:0 0 12px"><b>Sveve brukernavn og passord</b> lagres kun i din egen nettleser (ikke i databasen). «Send» går direkte til Sveve. Hvis nettleseren blokkerer det, bruk «Åpne Meldinger» eller «Kopiér numre».</div>
+        <div class="koadd" style="margin-bottom:12px">
           <div><label class="fld">Sveve brukernavn</label><input class="txt" id="svUser" type="text" placeholder="bkgruppen"></div>
           <div><label class="fld">Avsender</label><input class="txt" id="svFrom" type="text" placeholder="BK"></div>
-          <div class="full"><label class="fld">Sveve passord</label><input class="txt" id="svPass" type="password" placeholder="(lagres kun lokalt)"></div>
+          <div class="full"><label class="fld">Sveve passord</label><input class="txt" id="svPass" type="password" placeholder="lagres kun i din nettleser"></div>
         </div>
         <div class="field"><label class="fld">Mottakere</label>
           <select class="sel" id="remTarget"><option value="missing">Kun de som ikke har levert</option><option value="all">Alle deltakere</option></select></div>
@@ -352,10 +379,9 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
    ============================================================ */
 const CONFIG = {
   // === Fyll inn fra Supabase (Project Settings -> API) ===
-  SUPABASE_URL: "https://nhneejuumqvrlirqlsor.supabase.co",
-  SUPABASE_ANON_KEY: "sb_publishable_4tn2Nu-CLl0p-VXy_y-yFQ_Qnn3xS3U",
-  EDGE_FN_URL: "",   // valgfri: URL til send-reminders edge function (for "Send SMS naa")
-  adminCode: "bk2026",                              // BYTT denne – kun arrangøren
+  SUPABASE_URL: "https://DITT-PROSJEKT.supabase.co",
+  SUPABASE_ANON_KEY: "DIN-ANON-KEY",
+
   deadlineGroups: new Date("2026-06-11T20:00:00"),  // del 1 (gruppespill) – siste frist. Lokal tid. Juster ved behov.
   pTeam: 1,                                          // poeng per riktig lag videre fra gruppe (1./2. plass)
   pAdvance: 1,                                       // poeng for riktig lag videre i sluttspill
@@ -485,12 +511,13 @@ async function init(){
   // Sørg for at alle runder finnes (legg til manglende kamper uten å røre tildelte lag)
   const have=new Set(META.ko.map(m=>m.id)); let added=false;
   FULL_BRACKET.forEach(m=>{ if(!have.has(m.id)){ META.ko.push({...m}); added=true; } });
-  if(added) await DB.set("meta",META);
+  // (meta lagres kun når arrangøren gjør en endring; RLS sperrer skriving for andre)
   state.pv = META.phase==="groups" ? "groups" : "knockout";
   RESULTS=await DB.get("results")||{advance:{},ko:{}};
   fillSel($("#koA")); fillSel($("#koB"));
   $("#prizes").innerHTML=(CONFIG.prizes||[]).map((p,i)=>'<div class="prize'+(i===0?" g1":"")+'"><div class="pl">'+(i===0?"🏆 ":"")+esc(p.place)+'</div><div class="pz">'+esc(p.prize)+'</div></div>').join("");
   renderStatus();
+  setupAdminGate();
   const me=await DB.getLocal("me");           // husk innlogging i nettleseren
   if(me&&me.mobile){ await loginUser(me.name,me.mobile,true); } else { renderTipp(); }
   if(!SB){ const b=document.createElement("div"); b.className="banner warn"; b.style.margin="14px 16px";
@@ -634,8 +661,13 @@ function bindKo(card,m){
   });
 }
 
-/* ---- registrering / innlogging (mobil = unik ID) ---- */
-$("#rPhone").addEventListener("input",e=>{ e.target.value=e.target.value.replace(/\D/g,"").slice(0,8); });
+/* ---- innlogging / registrering (mobil = unik ID) ---- */
+function numOnly(e){ e.target.value=e.target.value.replace(/\D/g,"").slice(0,8); }
+$("#rPhone").addEventListener("input",numOnly);
+$("#liPhone").addEventListener("input",numOnly);
+function showRegView(on){ $("#viewReg").classList.toggle("hidden",!on); $("#viewLogin").classList.toggle("hidden",on); }
+$("#toReg").onclick=()=>{ $("#rPhone").value=$("#liPhone").value; showRegView(true); };
+$("#toLogin").onclick=()=>{ $("#liPhone").value=$("#rPhone").value; showRegView(false); };
 async function loginUser(name,phone,silent){
   const id=mid(phone); const key="user:"+id;
   const existing=await DB.get(key);
@@ -651,6 +683,15 @@ async function loginUser(name,phone,silent){
   if(!silent) flash(existing?("Velkommen tilbake, "+user.name.split(" ")[0]+"!"):"Du er med! 🎉");
   renderTipp();
 }
+// Logg inn: kun mobilnummer (må være registrert fra før)
+$("#loginBtn").onclick=async()=>{
+  const phone=$("#liPhone").value.trim(), id=mid(phone);
+  if(id.length!==8){ flash("Mobilnummer må være 8 siffer"); return; }
+  const existing=await DB.get("user:"+id);
+  if(!existing){ flash("Nummeret er ikke registrert ennå – registrer deg først"); $("#rPhone").value=phone; showRegView(true); return; }
+  await loginUser(existing.name,phone,false);
+};
+// Registrer: navn + mobil (navnet huskes på nummeret)
 $("#regBtn").onclick=async()=>{
   const name=$("#rName").value.trim(), phone=$("#rPhone").value.trim();
   if(!name){ flash("Fyll inn navnet ditt"); return; }
@@ -660,7 +701,7 @@ $("#regBtn").onclick=async()=>{
 $("#logout").onclick=async()=>{ state.user=null; dirtyGroups=false;
   await DB.setLocal("me",null);
   state.advance=emptyAdvance(); state.ko={};
-  $("#rName").value=$("#rPhone").value=""; renderTipp(); };
+  $("#rName").value=$("#rPhone").value=$("#liPhone").value=""; showRegView(false); renderTipp(); };
 
 /* ---- TABELL ---- */
 function scoreUser(pick,kopick){
@@ -703,13 +744,113 @@ async function renderTabell(){
 
 /* ---- ARRANGØR ---- */
 let unlocked=false;
+const IS_HOSTED = (typeof SB!=="undefined" && !!SB);   // Supabase tilkoblet => arrangør logger inn
+function setAdmin(on){
+  unlocked=on;
+  $("#gate").classList.toggle("hidden",on);
+  $("#adminPanel").classList.toggle("hidden",!on);
+  if(on){ Object.keys(GROUPS).forEach(g=>adminG[g]=(RESULTS.advance?.[g]||[]).slice()); renderAdmin();
+    DB.getLocal("fdtoken").then(t=>{ if($("#fdToken")) $("#fdToken").value=t||""; }); }
+}
+function setupAdminGate(){
+  $("#gateAuth").classList.toggle("hidden",!IS_HOSTED);
+  $("#gateCode").classList.toggle("hidden",IS_HOSTED);
+  $("#gateHint").textContent = IS_HOSTED
+    ? "Logg inn som arrangør for å legge inn fasit, åpne sluttspillet og sende SMS."
+    : "Forhåndsvisning: skriv hva som helst for å se arrangørpanelet.";
+  if(IS_HOSTED){ SB.auth.getSession().then(({data})=>{ if(data&&data.session) setAdmin(true); }); }
+}
 $("#adminBtn").onclick=async()=>{
-  if($("#adminInput").value!==CONFIG.adminCode){ flash("Feil kode"); return; }
-  unlocked=true; $("#gate").classList.add("hidden"); $("#adminPanel").classList.remove("hidden");
-  Object.keys(GROUPS).forEach(g=>adminG[g]=(RESULTS.advance?.[g]||[]).slice());
-  renderAdmin();
+  if(IS_HOSTED){
+    const email=$("#adminEmail").value.trim(), password=$("#adminPass").value;
+    if(!email||!password){ flash("Fyll inn e-post og passord"); return; }
+    const {error}=await SB.auth.signInWithPassword({email,password});
+    if(error){ flash("Innlogging feilet"); return; }
+    $("#adminPass").value=""; setAdmin(true); flash("Logget inn som arrangør");
+  } else {
+    if(!$("#adminInput").value){ flash("Skriv inn noe (forhåndsvisning)"); return; }
+    setAdmin(true);
+  }
 };
-$("#adminClose").onclick=()=>{ unlocked=false; $("#adminPanel").classList.add("hidden"); $("#gate").classList.remove("hidden"); $("#adminInput").value=""; };
+$("#adminClose").onclick=async()=>{ if(IS_HOSTED){ try{await SB.auth.signOut();}catch(e){} } $("#adminInput").value=""; setAdmin(false); };
+
+/* ---- Auto-import fra football-data.org (via serverfunksjon) ---- */
+const NORM=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z]/g,"");
+const TEAM_ALIAS={};
+(function(){ const M={
+  "Mexico":["mexico"],"Sør-Afrika":["southafrica"],"Sør-Korea":["southkorea","korearepublic","republicofkorea"],"Tsjekkia":["czechrepublic","czechia"],
+  "Canada":["canada"],"Bosnia-Hercegovina":["bosniaandherzegovina","bosniaherzegovina"],"Qatar":["qatar"],"Sveits":["switzerland"],
+  "Brasil":["brazil"],"Marokko":["morocco"],"Haiti":["haiti"],"Skottland":["scotland"],
+  "USA":["unitedstates","unitedstatesofamerica","usa"],"Paraguay":["paraguay"],"Australia":["australia"],"Tyrkia":["turkey","turkiye"],
+  "Tyskland":["germany"],"Curaçao":["curacao"],"Elfenbenskysten":["ivorycoast","cotedivoire"],"Ecuador":["ecuador"],
+  "Nederland":["netherlands"],"Japan":["japan"],"Sverige":["sweden"],"Tunisia":["tunisia"],
+  "Belgia":["belgium"],"Egypt":["egypt"],"Iran":["iran","iriran"],"New Zealand":["newzealand"],
+  "Spania":["spain"],"Kapp Verde":["capeverde","caboverde"],"Saudi-Arabia":["saudiarabia"],"Uruguay":["uruguay"],
+  "Frankrike":["france"],"Senegal":["senegal"],"Irak":["iraq"],"Norge":["norway"],
+  "Argentina":["argentina"],"Algerie":["algeria"],"Østerrike":["austria"],"Jordan":["jordan"],
+  "Portugal":["portugal"],"DR Kongo":["drcongo","congodr","democraticrepublicofthecongo"],"Usbekistan":["uzbekistan"],"Colombia":["colombia"],
+  "England":["england"],"Kroatia":["croatia"],"Ghana":["ghana"],"Panama":["panama"]
+};
+  Object.entries(M).forEach(([no,al])=>{ TEAM_ALIAS[NORM(no)]=no; al.forEach(a=>TEAM_ALIAS[a]=no); });
+})();
+function mapTeam(name){ return TEAM_ALIAS[NORM(name)]||null; }
+const FD_ROUND={LAST_32:"16-delsfinale",LAST_16:"Åttedelsfinale",QUARTER_FINALS:"Kvartfinale",SEMI_FINALS:"Semifinale",THIRD_PLACE:"Bronsefinale",FINAL:"Finale"};
+const FD_KO=["LAST_32","LAST_16","QUARTER_FINALS","SEMI_FINALS","THIRD_PLACE","FINAL"];
+// Normaliser rådata fra football-data.org
+function normWC(standingsArr,matchesArr){
+  const standings=(standingsArr||[]).filter(s=>s.stage==="GROUP_STAGE"&&s.type==="TOTAL")
+    .map(s=>({group:s.group, table:(s.table||[]).map(r=>({pos:r.position, team:r.team&&r.team.name}))}));
+  const ko=(matchesArr||[]).filter(x=>FD_KO.includes(x.stage)).map(x=>({
+    stage:x.stage, utcDate:x.utcDate, status:x.status,
+    home:x.homeTeam&&x.homeTeam.name, away:x.awayTeam&&x.awayTeam.name,
+    winner: x.status==="FINISHED" ? (x.score&&x.score.winner==="HOME_TEAM"?(x.homeTeam&&x.homeTeam.name)
+      : x.score&&x.score.winner==="AWAY_TEAM"?(x.awayTeam&&x.awayTeam.name):null) : null
+  }));
+  return {standings,ko};
+}
+
+$("#fdToken").onchange=()=>DB.setLocal("fdtoken",$("#fdToken").value.trim());
+$("#importBtn").onclick=async()=>{
+  const token=($("#fdToken").value||"").trim(); if(token) await DB.setLocal("fdtoken",token);
+  const tok=token||(await DB.getLocal("fdtoken"))||"";
+  if(!tok){ $("#importNote").textContent="Lim inn football-data.org-token først (gratis på football-data.org)."; return; }
+  $("#importNote").textContent="Henter …";
+  let d;
+  try{
+    const base="https://api.football-data.org/v4/competitions/WC", H={headers:{"X-Auth-Token":tok}};
+    const [s,m]=await Promise.all([fetch(base+"/standings",H), fetch(base+"/matches",H)]);
+    if(s.status===403||m.status===403){ $("#importNote").textContent="Ugyldig token (403)."; return; }
+    if(!s.ok||!m.ok){ $("#importNote").textContent="Feil fra football-data ("+s.status+"/"+m.status+")."; return; }
+    const sd=await s.json(), md=await m.json();
+    d=normWC(sd.standings, md.matches);
+  }catch(e){ $("#importNote").textContent="Kunne ikke hente. Blokkerer nettleseren kallet (CORS), si ifra – da setter vi opp en liten proxy."; return; }
+  let unmapped=[];
+    // 1) Gruppefasit = topp 2 i hver gruppe
+    const adv={};
+    (d.standings||[]).forEach(s=>{ const g=String(s.group||"").replace(/[^A-L]/g,"");
+      if(!g||!Array.isArray(s.table)) return;
+      const top=s.table.slice(0,2).map(r=>{ const n=mapTeam(r.team); if(!n)unmapped.push(r.team); return n; }).filter(Boolean);
+      if(top.length) adv[g]=top;
+    });
+    if(Object.keys(adv).length){ RESULTS.advance=adv; Object.keys(GROUPS).forEach(g=>adminG[g]=(adv[g]||[]).slice()); }
+    // 2) Sluttspill-lag (+ fasit for ferdigspilte) – per runde, sortert på tid, koblet til vårt oppsett
+    const byRound={}; (d.ko||[]).forEach(m=>{ const r=FD_ROUND[m.stage]; if(!r)return; (byRound[r]=byRound[r]||[]).push(m); });
+    Object.keys(byRound).forEach(r=>{
+      const fd=byRound[r].slice().sort((a,b)=>new Date(a.utcDate)-new Date(b.utcDate));
+      const ours=META.ko.filter(m=>m.round===r).sort((a,b)=>(matchStart(a)?.getTime()||0)-(matchStart(b)?.getTime()||0));
+      ours.forEach((om,i)=>{ const fm=fd[i]; if(!fm)return;
+        const a=mapTeam(fm.home), b=mapTeam(fm.away);
+        if(a){om.a=a;} if(b){om.b=b;}
+        if(!a&&fm.home)unmapped.push(fm.home); if(!b&&fm.away)unmapped.push(fm.away);
+        const w=mapTeam(fm.winner); if(w) RESULTS.ko[om.id]={adv:w};
+      });
+    });
+    await DB.set("results",RESULTS); await DB.set("meta",META);
+    renderAdmin();
+    const uniq=[...new Set(unmapped)];
+    $("#importNote").textContent="Hentet og lagret ✓ "+Object.keys(adv).length+" grupper."+(uniq.length?(" Ukjente lagnavn (sjekk manuelt): "+uniq.join(", ")):"");
+    flash("Resultater hentet ✓");
+};
 
 function renderAdmin(){
   document.querySelectorAll(".phasebtns button").forEach(b=>b.classList.toggle("cur",b.dataset.set===META.phase));
@@ -830,21 +971,23 @@ async function copyTxt(t){
 $("#remTarget").onchange=buildRemLinks;
 $("#remMsg").oninput=buildRemLinks;
 $("#remCopyNum").onclick=()=>copyTxt(remList().map(x=>cleanNum(x.u.mobile)).join(", "));
-// Lagre Sveve-nøkler kun lokalt (denne enheten), aldri i den delte databasen
+// Sveve-nøkler lagres kun lokalt (denne nettleseren), aldri i den delte databasen
 async function saveSveve(){ await DB.setLocal("sveve",{user:$("#svUser").value.trim(),passwd:$("#svPass").value,from:($("#svFrom").value.trim()||"BK")}); }
 ["svUser","svPass","svFrom"].forEach(id=>$("#"+id).onchange=saveSveve);
-// Send via Sveve nå (best effort – kan blokkeres av nettleser i forhåndsvisning; virker på eget domene)
+// Send direkte via Sveve fra nettleseren (enkel URL-forespørsel)
 $("#svSend").onclick=async()=>{
+  await saveSveve(); const sv=await DB.getLocal("sveve")||{};
+  if(!sv.user||!sv.passwd){ flash("Fyll inn Sveve brukernavn og passord"); return; }
   const list=remList(); if(!list.length){ flash("Ingen mottakere"); return; }
-  const msg=$("#remMsg").value;
-  if(!CONFIG.EDGE_FN_URL){ flash("Sett EDGE_FN_URL for utsending, eller bruk «Åpne Meldinger»"); return; }
-  if(!confirm("Sende SMS til "+list.length+" mottakere nå?")) return;
-  try{
-    const res=await fetch(CONFIG.EDGE_FN_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+CONFIG.SUPABASE_ANON_KEY},
-      body:JSON.stringify({mode:"broadcast",adminCode:CONFIG.adminCode,message:msg,numbers:list.map(x=>cleanNum(x.u.mobile))})});
-    const out=await res.json().catch(()=>({}));
-    flash(res.ok?("Sendt: "+(out.sent??list.length)+" SMS"):("Feil: "+(out.error||res.status)));
-  }catch(e){ flash("Kunne ikke nå utsendingstjenesten"); }
+  if(!confirm("Sende SMS til "+list.length+" mottakere via Sveve nå?")) return;
+  const msg=$("#remMsg").value; let ok=0;
+  for(const x of list){
+    const to=cleanNum(x.u.mobile).replace(/^\+?47/,"");
+    const url="https://sveve.no/SMS/SendMessage?from="+encodeURIComponent(sv.from)+"&user="+encodeURIComponent(sv.user)+"&passwd="+encodeURIComponent(sv.passwd)+"&to="+encodeURIComponent(to)+"&msg="+encodeURIComponent(msg);
+    try{ await fetch(url,{mode:"no-cors"}); ok++; }catch(e){}
+    await new Promise(r=>setTimeout(r,200));
+  }
+  flash("Sendt til "+ok+" via Sveve. Får noen ikke SMS, bruk «Åpne Meldinger».");
 };
 
 /* ---- hjelpere ---- */
