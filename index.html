@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="no">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>VM-tippen i BK 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=EB+Garamond:ital@1&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   BK-profil  ·  hovedfarge digital blå, varm hvit, grønner
+   ============================================================ */
+:root{
+  --blue:#3538CA; --blue-d:#2a2ca3;
+  --cream:#FFF9F5; --white:#FFFFFF; --black:#000000;
+  --green:#27644C; --mint:#E1FFF3;
+  --ink:#1c1e52; --muted:#6b6f9c; --line:#e6ddd6; --line2:#d6cabf;
+  --gold:#caa64a; --silver:#9aa0c2; --bronze:#bd8a55; --danger:#c2443a;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:'Inter',system-ui,Arial,sans-serif;
+  background:var(--cream); color:var(--ink); line-height:1.5;
+  min-height:100dvh; padding-bottom:92px; -webkit-font-smoothing:antialiased;
+  font-weight:500;
+}
+.wrap{max-width:680px;margin:0 auto;padding:0 16px}
+.serif{font-family:'EB Garamond',Georgia,serif;font-style:italic;font-weight:400}
+
+/* ---------- HERO ---------- */
+.hero{background:var(--blue);color:var(--white);position:relative;overflow:hidden;
+  padding:22px 20px 30px;border-radius:0 0 26px 26px}
+.hero-inner{max-width:648px;margin:0 auto;position:relative;z-index:2}
+.brandrow{display:flex;align-items:center;justify-content:space-between}
+.logo{height:42px;width:auto;display:block}
+.tag{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;opacity:.85}
+.hero h1{font-weight:700;font-size:clamp(34px,9.5vw,52px);line-height:1.02;letter-spacing:-.025em;margin:34px 0 0}
+.hero h1 .serif{font-size:1.06em;letter-spacing:0}
+.hero p{margin:14px 0 0;font-size:15px;font-weight:500;opacity:.92;max-width:42ch}
+/* dekor-former (kapsler + ring) */
+.deco{position:absolute;background:rgba(255,255,255,.16);border-radius:999px;z-index:1}
+.d1{width:14px;height:62px;top:18px;right:34%;transform:rotate(34deg)}
+.d2{width:14px;height:54px;top:70px;right:9%;transform:rotate(-32deg)}
+.d3{width:14px;height:46px;bottom:24px;right:24%;transform:rotate(40deg)}
+.ring{position:absolute;top:14px;right:6%;width:58px;height:58px;border-radius:999px;
+  border:11px solid rgba(255,255,255,.18);z-index:1}
+.grain{position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.035;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+
+/* status-stripe under hero */
+.status{max-width:648px;margin:14px auto 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:999px;border:1px solid var(--line2);background:var(--white);color:var(--muted)}
+.chip.on{background:var(--mint);border-color:var(--green);color:var(--green);font-weight:700}
+.chip.lock{background:#fbeae8;border-color:var(--danger);color:var(--danger)}
+
+/* ---------- generelt ---------- */
+.sec{margin:24px 4px 12px;display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.sec h2{font-weight:700;font-size:21px;letter-spacing:-.02em;margin:0;color:var(--blue)}
+.sec h2 .serif{font-size:1.06em}
+.sec .note{font-size:12.5px;color:var(--muted);font-weight:600}
+
+.card{background:var(--white);border:1px solid var(--line);border-radius:18px}
+.namebar .card{padding:16px}
+label.fld{display:block;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:0 0 6px}
+input.txt,select.sel,textarea.txt{width:100%;background:var(--cream);border:1.5px solid var(--line2);color:var(--ink);
+  font:600 16px 'Inter',sans-serif;padding:13px 14px;border-radius:11px;outline:none}
+input.txt:focus,select.sel:focus,textarea.txt:focus{border-color:var(--blue)}
+textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
+.field{margin-bottom:12px}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+
+/* gruppe-kort */
+.group{background:var(--white);border:1px solid var(--line);border-radius:18px;padding:6px 6px 10px;margin-bottom:12px}
+.group-head{display:flex;align-items:center;justify-content:space-between;padding:11px 12px 8px}
+.group-head .gname{font-weight:700;font-size:15px;letter-spacing:.02em;color:var(--blue)}
+.group-head .gname b{font-size:17px}
+.counter{font-size:12px;font-weight:700;color:var(--muted);background:var(--cream);border:1px solid var(--line2);padding:4px 9px;border-radius:999px;white-space:nowrap}
+.counter.full{color:var(--white);background:var(--blue);border-color:var(--blue)}
+.gstatus{font-size:12px;font-weight:800;padding:4px 10px;border-radius:999px;white-space:nowrap;border:1px solid transparent}
+.gstatus.st-2{background:var(--mint);color:var(--green);border-color:var(--green)}
+.gstatus.st-1{background:#FFF3D6;color:#8a6a12;border-color:#e7cf91}
+.gstatus.st-0{background:#FFE4E1;color:#b42318;border-color:#f2c2bc}
+.team.correct{border-color:var(--green)!important;background:var(--mint)}
+.team.correct .tick{background:var(--green);border-color:var(--green);color:#fff}
+.team{display:flex;align-items:center;gap:12px;width:calc(100% - 10px);margin:5px;text-align:left;cursor:pointer;
+  background:var(--cream);border:1.5px solid transparent;color:var(--ink);font:600 16px 'Inter',sans-serif;
+  padding:12px 13px;border-radius:12px;transition:.12s}
+.team:active{transform:scale(.985)}
+.team .flag{font-size:21px;width:25px;text-align:center}
+.team .nm{flex:1}
+.team .tick{width:23px;height:23px;border-radius:7px;border:2px solid var(--line2);display:grid;place-items:center;color:transparent;font-size:13px;transition:.12s}
+.team.on{background:var(--mint);border-color:var(--blue)}
+.team.on .tick{background:var(--blue);border-color:var(--blue);color:#fff}
+.team.dim{opacity:.5}
+.team.ro{cursor:default}
+
+/* knockout-kamp */
+.match{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:13px 14px;margin-bottom:11px}
+.match .rnd{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:9px}
+.match .vs{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px}
+.side{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;min-width:0}
+.side.r{justify-content:flex-end;text-align:right}
+.side .flag{font-size:19px}
+.side .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scorebox{display:flex;align-items:center;gap:6px;justify-content:center}
+.scorebox input{width:42px;text-align:center;background:var(--cream);border:1.5px solid var(--line2);
+  font:700 18px 'Inter';color:var(--ink);padding:8px 0;border-radius:9px;outline:none}
+.scorebox input:focus{border-color:var(--blue)}
+.scorebox .dash{color:var(--muted);font-weight:700}
+.adv{display:flex;gap:7px;margin-top:11px}
+.adv button{flex:1;background:var(--cream);border:1.5px solid var(--line2);color:var(--ink);
+  font:700 13px 'Inter';padding:9px;border-radius:10px;cursor:pointer}
+.adv button.sel{background:var(--blue);border-color:var(--blue);color:#fff}
+.adv .lbl{font-size:11px;font-weight:700;color:var(--muted);align-self:center;text-transform:uppercase;letter-spacing:.06em}
+.match.done{opacity:.97}
+.match .res{margin-top:10px;font-size:13px;font-weight:600;color:var(--green);background:var(--mint);border-radius:9px;padding:7px 10px}
+.advwrap{margin-top:11px}
+.kochoice{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.koteam{display:flex;align-items:center;gap:11px;width:100%;text-align:left;cursor:pointer;background:var(--cream);
+  border:1.5px solid transparent;color:var(--ink);font:700 15px 'Inter';padding:11px 13px;border-radius:11px;transition:.12s}
+.koteam:active{transform:scale(.99)}
+.koteam .flag{font-size:19px;width:24px;text-align:center}
+.koteam .nm{flex:1}
+.koteam .tick{width:21px;height:21px;border-radius:6px;border:2px solid var(--line2);display:grid;place-items:center;color:transparent;font-size:12px;transition:.12s}
+.koteam.on{background:var(--mint);border-color:var(--blue)}
+.koteam.on .tick{background:var(--blue);border-color:var(--blue);color:#fff}
+.koteam.ro{cursor:default}
+.advnote{font-size:13.5px;font-weight:700;color:var(--blue)}
+.advnote.dim{font-weight:600;color:var(--muted);font-size:12.5px;line-height:1.35}
+.startline{margin-top:8px;font-size:12px;font-weight:600;color:var(--muted)}
+.lockline{margin-top:10px;font-size:12.5px;font-weight:600;color:var(--green);background:var(--mint);border-radius:9px;padding:7px 10px}
+.lockline.shut{color:var(--danger);background:#fbeae8}
+/* premier */
+.prizes{display:flex;gap:9px;margin:4px 0 8px;flex-wrap:wrap}
+.prize{flex:1;min-width:150px;background:var(--white);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.prize .pl{font-weight:800;font-size:13px;color:var(--blue)}
+.prize.g1{border-color:var(--gold)} .prize.g1 .pl{color:var(--gold)}
+.prize .pz{font-size:13px;color:var(--ink);font-weight:600;margin-top:2px}
+
+/* knapper */
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:none;cursor:pointer;
+  font:700 16px 'Inter';padding:15px;border-radius:13px;letter-spacing:-.01em}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:disabled{background:var(--line2);color:#fff;opacity:.7;cursor:not-allowed}
+.btn-green{background:var(--green);color:#fff}
+.btn-ghost{background:var(--white);color:var(--blue);border:1.5px solid var(--blue)}
+.btn-sm{padding:11px;font-size:14px;border-radius:11px}
+.submit-wrap{position:sticky;bottom:92px;margin:18px 0 4px;z-index:6}
+.submit-wrap .btn{box-shadow:0 10px 26px rgba(53,56,202,.28)}
+.linkbtn{background:none;border:none;color:var(--blue);font:700 14px 'Inter';text-decoration:underline;cursor:pointer;padding:6px}
+.mlink{display:block;margin:16px auto 0;color:var(--muted);font-weight:600;font-size:13px}
+
+/* phase switch */
+.pswitch{display:flex;gap:7px;background:var(--white);border:1px solid var(--line);border-radius:14px;padding:5px;margin:16px 0 4px}
+.pswitch button{flex:1;background:none;border:none;color:var(--muted);font:700 14px 'Inter';padding:11px;border-radius:10px;cursor:pointer}
+.pswitch button.active{background:var(--blue);color:#fff}
+.pswitch button:disabled{opacity:.45;cursor:not-allowed}
+
+/* leaderboard */
+.row{display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:9px}
+.row .pos{font-weight:800;font-size:18px;width:30px;text-align:center;color:var(--muted)}
+.row.p1{border-color:var(--gold)} .row.p1 .pos{color:var(--gold)}
+.row.p2 .pos{color:var(--silver)} .row.p3 .pos{color:var(--bronze)}
+.row .who{flex:1;min-width:0}
+.row .who .n{font-weight:700;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .who .d{font-size:12px;color:var(--muted);font-weight:600}
+.row .pts{font-weight:800;font-size:22px;color:var(--blue);text-align:right}
+.row .pts small{display:block;font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.05em}
+.row.you{outline:2px solid var(--blue);outline-offset:-1px}
+.badge{font-size:10px;font-weight:800;color:#fff;background:var(--blue);padding:2px 6px;border-radius:5px;margin-left:6px;vertical-align:1px}
+.empty{text-align:center;color:var(--muted);padding:38px 16px}
+.empty .big{font-weight:800;font-size:20px;color:var(--ink);margin-bottom:6px}
+
+/* admin */
+.banner{background:var(--mint);border:1px solid var(--green);color:var(--green);font-size:13px;font-weight:600;padding:11px 14px;border-radius:12px;margin:14px 0}
+.banner.warn{background:#fbeae8;border-color:var(--danger);color:var(--danger)}
+.phasebtns{display:flex;gap:8px;margin:12px 0}
+.phasebtns button{flex:1;background:var(--white);border:1.5px solid var(--line2);color:var(--ink);font:700 13px 'Inter';padding:11px 6px;border-radius:11px;cursor:pointer}
+.phasebtns button.cur{background:var(--blue);border-color:var(--blue);color:#fff}
+.contact{font-size:13px;padding:9px 12px;border-bottom:1px solid var(--line)}
+.contact b{color:var(--ink)} .contact span{color:var(--muted)}
+.koadd{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.koadd .full{grid-column:1/-1}
+.kolist .kxrow{background:var(--cream);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:8px}
+.kolist .kxhead{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;color:var(--blue)}
+.kolist .kxhead .x{color:var(--danger);background:none;border:none;font-weight:800;cursor:pointer;font-size:15px}
+.kolist .kxassign{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.kolist .kxassign .fld{margin-bottom:4px;font-size:11px}
+.kolist .kxassign select{padding:9px 10px;font-size:14px}
+
+/* nav */
+.nav{position:fixed;bottom:0;left:0;right:0;background:rgba(255,249,245,.95);backdrop-filter:blur(12px);
+  border-top:1px solid var(--line);padding:7px 8px calc(7px + env(safe-area-inset-bottom));z-index:30}
+.nav-inner{max-width:680px;margin:0 auto;display:flex;gap:6px}
+.nav button{flex:1;background:none;border:none;color:var(--muted);cursor:pointer;padding:7px 4px;border-radius:12px;
+  display:flex;flex-direction:column;align-items:center;gap:3px;font:700 11px 'Inter';letter-spacing:.02em}
+.nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2}
+.nav button.active{color:var(--blue);background:rgba(53,56,202,.09)}
+
+.toast{position:fixed;left:50%;bottom:108px;transform:translateX(-50%) translateY(18px);background:var(--blue);color:#fff;
+  font-weight:700;padding:13px 22px;border-radius:999px;box-shadow:0 10px 28px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.26s;z-index:50;font-size:15px;text-align:center;max-width:90vw}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.hidden{display:none!important}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="grain"></div>
+
+<div class="hero">
+  <span class="ring"></span><span class="deco d1"></span><span class="deco d2"></span><span class="deco d3"></span>
+  <div class="hero-inner">
+    <div class="brandrow">
+      <img class="logo" alt="BK" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMiIgZGF0YS1uYW1lPSJMYXllciAyIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHhtbG5zOnhsaW5rPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5L3hsaW5rIiB2aWV3Qm94PSIwIDAgMTM0LjEzIDEyMy4zNiI+CiAgPGRlZnM+CiAgICA8c3R5bGU+CiAgICAgIC5jbHMtMSB7CiAgICAgICAgbWFzazogdXJsKCNtYXNrKTsKICAgICAgfQoKICAgICAgLmNscy0yIHsKICAgICAgICBmaWxsOiAjZmZmOwogICAgICB9CiAgICA8L3N0eWxlPgogICAgPG1hc2sgaWQ9Im1hc2siIHg9Ii0uMDkiIHk9IjAiIHdpZHRoPSIxMzQuMjUiIGhlaWdodD0iMTIzLjUxIiBtYXNrVW5pdHM9InVzZXJTcGFjZU9uVXNlIj4KICAgICAgPGcgaWQ9Im1hc2swXzI0MTRfOTUxMiIgZGF0YS1uYW1lPSJtYXNrMCAyNDE0IDk1MTIiPgogICAgICAgIDxwYXRoIGNsYXNzPSJjbHMtMiIgZD0iTS0uMDksMGgxMzQuMjV2MTIzLjUxSC0uMDlWMFoiLz4KICAgICAgPC9nPgogICAgPC9tYXNrPgogIDwvZGVmcz4KICA8ZyBpZD0iTGF5ZXJfMS0yIiBkYXRhLW5hbWU9IkxheWVyIDEiPgogICAgPGc+CiAgICAgIDxnIGNsYXNzPSJjbHMtMSI+CiAgICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMTAuMzEsMTAuMzdoMTEzLjUxdjEwMi42MkgxMC4zMVYxMC4zN1pNMCwxMjMuMzZoMTM0LjEzVjBIMHYxMjMuMzZaIi8+CiAgICAgIDwvZz4KICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNNDMuOTIsODQuNDdjLS4yMiwwLS40NCwwLS42Ni0uMDItLjIyLS4wMS0uNDQtLjAzLS42Ni0uMDUtLjIyLS4wMi0uNDQtLjA1LS42NS0uMDgtLjIyLS4wMy0uNDMtLjA3LS42NS0uMTEtLjIyLS4wNC0uNDMtLjA5LS42NC0uMTQtLjIxLS4wNS0uNDItLjExLS42My0uMTgtLjIxLS4wNi0uNDItLjEzLS42Mi0uMjEtLjIxLS4wOC0uNDEtLjE1LS42MS0uMjQtLjItLjA4LS40LS4xNy0uNi0uMjctLjItLjA5LS4zOS0uMTktLjU5LS4zLS4xOS0uMS0uMzgtLjIxLS41Ny0uMzMtLjE5LS4xMS0uMzctLjIzLS41Ni0uMzUtLjE4LS4xMi0uMzYtLjI1LS41NC0uMzgtLjE4LS4xMy0uMzUtLjI3LS41Mi0uNDEtLjE3LS4xNC0uMzQtLjI4LS41LS40My0uMTYtLjE1LS4zMi0uMy0uNDgtLjQ2LS4xNS0uMTYtLjMxLS4zMi0uNDUtLjQ4LS4xNS0uMTYtLjI5LS4zMy0uNDMtLjUtLjE0LS4xNy0uMjctLjM0LS40LS41Mi0uMTMtLjE4LS4yNi0uMzYtLjM4LS41NC0uMTItLjE4LS4yNC0uMzctLjM1LS41Ni0uMTEtLjE5LS4yMi0uMzgtLjMyLS41OC0uMS0uMTktLjItLjM5LS4zLS41OS0uMDktLjItLjE4LS40LS4yNy0uNjEtLjA4LS4yLS4xNi0uNDEtLjI0LS42Mi0uMDctLjIxLS4xNC0uNDItLjIxLS42My0uMDYtLjIxLS4xMi0uNDItLjE4LS42NC0uMDUtLjIxLS4xLS40My0uMTQtLjY1LS4wNC0uMjItLjA4LS40My0uMTEtLjY1LS4wMy0uMjItLjA2LS40NC0uMDgtLjY2LS4wMi0uMjItLjA0LS40NC0uMDUtLjY2LS4wMS0uMjItLjAyLS40NC0uMDItLjY2czAtLjQ0LjAyLS42NmMuMDEtLjIyLjAzLS40NC4wNS0uNjYuMDItLjIyLjA1LS40NC4wOC0uNjYuMDMtLjIyLjA3LS40NC4xMS0uNjUuMDQtLjIyLjA5LS40My4xNC0uNjVzLjExLS40My4xOC0uNjRjLjA2LS4yMS4xMy0uNDIuMjEtLjYzcy4xNS0uNDEuMjQtLjYyYy4wOC0uMi4xNy0uNDEuMjctLjYxLjA5LS4yLjE5LS40LjMtLjU5LjEtLjE5LjIxLS4zOS4zMi0uNTguMTEtLjE5LjIzLS4zOC4zNS0uNTYuMTItLjE4LjI1LS4zNi4zOC0uNTQuMTMtLjE4LjI3LS4zNS40LS41Mi4xNC0uMTcuMjgtLjM0LjQzLS41LjE1LS4xNi4zLS4zMi40NS0uNDguMTYtLjE2LjMxLS4zMS40OC0uNDYuMTYtLjE1LjMzLS4yOS41LS40My4xNy0uMTQuMzQtLjI4LjUyLS40MS4xOC0uMTMuMzYtLjI2LjU0LS4zOC4xOC0uMTIuMzctLjI0LjU2LS4zNS4xOS0uMTEuMzgtLjIyLjU3LS4zMy4xOS0uMS4zOS0uMi41OS0uMy4yLS4wOS40LS4xOC42LS4yNy4yLS4wOC40MS0uMTYuNjEtLjI0LjIxLS4wNy40Mi0uMTQuNjItLjIxLjIxLS4wNi40Mi0uMTIuNjMtLjE4LjIxLS4wNS40My0uMS42NC0uMTUuMjItLjA0LjQzLS4wOC42NS0uMTEuMjItLjAzLjQ0LS4wNi42NS0uMDguMjItLjAyLjQ0LS4wNC42Ni0uMDUuMjItLjAxLjQ0LS4wMi42Ni0uMDJzLjQ0LDAsLjY2LjAyYy4yMi4wMS40NC4wMy42Ni4wNS4yMi4wMi40NC4wNS42NS4wOC4yMi4wMy40My4wNy42NS4xMS4yMi4wNC40My4wOS42NC4xNS4yMS4wNS40Mi4xMS42My4xOC4yMS4wNi40Mi4xMy42Mi4yMS4yMS4wNy40MS4xNS42MS4yNC4yLjA4LjQuMTcuNi4yNy4yLjA5LjM5LjE5LjU5LjMuMTkuMS4zOC4yMS41Ny4zMy4xOS4xMS4zNy4yMy41Ni4zNS4xOC4xMi4zNi4yNS41NC4zOC4xOC4xMy4zNS4yNy41Mi40MS4xNy4xNC4zNC4yOC41LjQzLjE2LjE1LjMyLjMuNDguNDYuMTYuMTYuMzEuMzIuNDUuNDguMTUuMTYuMjkuMzMuNDMuNS4xNC4xNy4yNy4zNS40LjUyLjEzLjE4LjI2LjM2LjM4LjU0LjEyLjE4LjI0LjM3LjM1LjU2LjExLjE5LjIyLjM4LjMyLjU4LjEuMi4yLjM5LjMuNTkuMDkuMi4xOC40LjI3LjYxLjA4LjIuMTYuNDEuMjQuNjJzLjE0LjQyLjIxLjYzYy4wNi4yMS4xMi40Mi4xNy42NC4wNS4yMS4xLjQzLjE0LjY1LjA0LjIyLjA4LjQzLjExLjY1LjAzLjIyLjA2LjQ0LjA4LjY2LjAyLjIyLjA0LjQ0LjA1LjY2LjAxLjIyLjAyLjQ0LjAyLjY2czAsLjQ0LS4wMi42NmMtLjAxLjIyLS4wMy40NC0uMDUuNjYtLjAyLjIyLS4wNS40NC0uMDguNjYtLjAzLjIyLS4wNy40NC0uMTEuNjUtLjA0LjIyLS4wOS40My0uMTQuNjUtLjA1LjIxLS4xMS40My0uMTcuNjQtLjA2LjIxLS4xMy40Mi0uMjEuNjMtLjA3LjIxLS4xNS40MS0uMjQuNjItLjA4LjItLjE3LjQxLS4yNy42MS0uMDkuMi0uMTkuNC0uMy41OS0uMS4yLS4yMS4zOS0uMzIuNTgtLjExLjE5LS4yMy4zOC0uMzUuNTYtLjEyLjE4LS4yNS4zNi0uMzguNTQtLjEzLjE4LS4yNy4zNS0uNC41Mi0uMTQuMTctLjI4LjM0LS40My41LS4xNS4xNi0uMy4zMi0uNDUuNDgtLjE2LjE2LS4zMS4zMS0uNDguNDYtLjE2LjE1LS4zMy4yOS0uNS40My0uMTcuMTQtLjM0LjI4LS41Mi40MS0uMTguMTMtLjM2LjI2LS41NC4zOC0uMTguMTItLjM3LjI0LS41Ni4zNS0uMTkuMTEtLjM4LjIyLS41Ny4zMy0uMTkuMS0uMzkuMi0uNTkuMy0uMi4wOS0uNC4xOC0uNi4yNy0uMi4wOC0uNDEuMTYtLjYxLjI0LS4yMS4wNy0uNDEuMTQtLjYyLjIxLS4yMS4wNi0uNDIuMTItLjYzLjE4LS4yMS4wNS0uNDMuMS0uNjQuMTQtLjIyLjA0LS40My4wOC0uNjUuMTEtLjIyLjAzLS40NC4wNi0uNjUuMDgtLjIyLjAyLS40NC4wNC0uNjYuMDUtLjIyLjAxLS40NC4wMi0uNjYuMDJaTTQzLjkyLDQ3LjEzYy0xLjE5LDAtMi4zOC4wOS0zLjU1LjI3LTEuMTguMTgtMi4zMy40NS0zLjQ3LjgtMS4xNC4zNi0yLjI0LjgtMy4zMSwxLjMyLTEuMDcuNTItMi4xLDEuMTMtMy4wOCwxLjgxdi0yMi44aC0xMC4zMXY0Mi40MWMwLC4zOSwwLC43OC4wMywxLjE3LjAyLjM5LjA1Ljc4LjA4LDEuMTcuMDQuMzkuMDguNzguMTQsMS4xNi4wNi4zOS4xMi43Ny4yLDEuMTUuMDguMzguMTYuNzcuMjUsMS4xNC4wOS4zOC4yLjc2LjMxLDEuMTMuMTEuMzcuMjMuNzUuMzYsMS4xMS4xMy4zNy4yNy43My40MiwxLjA5LjE1LjM2LjMuNzIuNDcsMS4wNy4xNy4zNS4zNC43LjUyLDEuMDUuMTguMzQuMzcuNjkuNTcsMS4wMi4yLjM0LjQxLjY3LjYyLjk5LjIyLjMzLjQ0LjY0LjY3Ljk2LjIzLjMxLjQ3LjYyLjcxLjkyLjI1LjMuNS42Ljc2Ljg5LjI2LjI5LjUzLjU3LjguODUuMjcuMjguNTUuNTUuODQuODEuMjkuMjYuNTguNTIuODguNzcuMy4yNS42MS40OS45Mi43Mi4zMS4yMy42My40Ni45NS42OC4zMi4yMi42NS40My45OC42My4zMy4yLjY3LjM5LDEuMDEuNTguMzQuMTkuNjkuMzYsMS4wNC41My4zNS4xNy43MS4zMywxLjA2LjQ4LjM2LjE1LjcyLjI5LDEuMDkuNDIuMzcuMTMuNzMuMjYsMS4xMS4zNy4zNy4xMS43NS4yMiwxLjEyLjMxLjM4LjEuNzUuMTgsMS4xNC4yNi4zOC4wOC43Ni4xNCwxLjE1LjIuMzguMDYuNzcuMTEsMS4xNi4xNS4zOS4wNC43Ny4wNywxLjE2LjA5LjM5LjAyLjc4LjAzLDEuMTYuMDMuMzksMCwuNzgsMCwxLjE2LS4wMy4zOS0uMDIuNzgtLjA1LDEuMTYtLjA4LjM5LS4wNC43Ny0uMDgsMS4xNi0uMTQuMzgtLjA2Ljc3LS4xMiwxLjE1LS4ycy43Ni0uMTYsMS4xNC0uMjVjLjM4LS4wOS43NS0uMiwxLjEyLS4zMS4zNy0uMTEuNzQtLjIzLDEuMTEtLjM3LjM3LS4xMy43My0uMjcsMS4wOS0uNDIuMzYtLjE1LjcxLS4zMSwxLjA3LS40Ny4zNS0uMTcuNy0uMzQsMS4wNC0uNTMuMzQtLjE4LjY4LS4zOCwxLjAxLS41OC4zMy0uMi42Ni0uNDEuOTktLjYzLjMyLS4yMi42NC0uNDQuOTUtLjY3LjMxLS4yMy42Mi0uNDcuOTItLjcyLjMtLjI1LjYtLjUuODgtLjc2LjI5LS4yNi41Ny0uNTMuODQtLjgxLjI3LS4yOC41NC0uNTYuOC0uODUuMjYtLjI5LjUyLS41OC43Ni0uODkuMjUtLjMuNDktLjYxLjcyLS45Mi4yMy0uMzEuNDYtLjYzLjY3LS45Ni4yMi0uMzIuNDItLjY1LjYyLS45OS4yLS4zNC4zOS0uNjcuNTgtMS4wMi4xOC0uMzQuMzYtLjY5LjUzLTEuMDUuMTctLjM1LjMyLS43MS40Ny0xLjA3LjE1LS4zNi4yOS0uNzIuNDItMS4wOS4xMy0uMzcuMjUtLjc0LjM3LTEuMTEuMTEtLjM3LjIyLS43NS4zMS0xLjEzLjA5LS4zOC4xOC0uNzYuMjYtMS4xNC4wOC0uMzguMTQtLjc3LjItMS4xNS4wNi0uMzkuMTEtLjc3LjE0LTEuMTYuMDQtLjM5LjA3LS43OC4wOS0xLjE3LjAyLS4zOS4wMy0uNzguMDMtMS4xNywwLS4zOSwwLS43OC0uMDMtMS4xNy0uMDItLjM5LS4wNS0uNzgtLjA4LTEuMTctLjA0LS4zOS0uMDktLjc4LS4xNC0xLjE2LS4wNi0uMzktLjEyLS43Ny0uMi0xLjE1LS4wOC0uMzgtLjE2LS43Ni0uMjUtMS4xNC0uMDktLjM4LS4yLS43Ni0uMzEtMS4xMy0uMTEtLjM3LS4yMy0uNzUtLjM2LTEuMTEtLjEzLS4zNy0uMjctLjczLS40Mi0xLjA5LS4xNS0uMzYtLjMxLS43Mi0uNDctMS4wNy0uMTctLjM1LS4zNC0uNy0uNTItMS4wNS0uMTgtLjM0LS4zNy0uNjgtLjU3LTEuMDItLjItLjM0LS40MS0uNjctLjYyLS45OS0uMjItLjMzLS40NC0uNjUtLjY3LS45Ni0uMjMtLjMxLS40Ny0uNjItLjcyLS45Mi0uMjUtLjMtLjUtLjYtLjc2LS44OS0uMjYtLjI5LS41My0uNTctLjgtLjg1LS4yNy0uMjgtLjU2LS41NS0uODQtLjgxLS4yOS0uMjYtLjU4LS41Mi0uODgtLjc3LS4zLS4yNS0uNjEtLjQ5LS45Mi0uNzItLjMxLS4yMy0uNjMtLjQ2LS45NS0uNjgtLjMyLS4yMi0uNjUtLjQzLS45OC0uNjMtLjMzLS4yLS42Ny0uMzktMS4wMS0uNTgtLjM0LS4xOC0uNjktLjM2LTEuMDQtLjUzLS4zNS0uMTctLjcxLS4zMy0xLjA3LS40Ny0uMzYtLjE1LS43Mi0uMjktMS4wOS0uNDItLjM3LS4xMy0uNzMtLjI1LTEuMTEtLjM3LS4zNy0uMTEtLjc1LS4yMi0xLjEyLS4zMS0uMzgtLjEtLjc2LS4xOC0xLjE0LS4yNi0uMzgtLjA4LS43Ni0uMTQtMS4xNS0uMi0uMzgtLjA2LS43Ny0uMTEtMS4xNi0uMTQtLjM5LS4wNC0uNzctLjA3LTEuMTYtLjA5LS4zOS0uMDItLjc4LS4wMy0xLjE2LS4wM1oiLz4KICAgICAgPHBhdGggY2xhc3M9ImNscy0yIiBkPSJNMTEwLjEyLDk1Ljc4bDcuMy03LjMyLTIwLjY5LTIwLjgyLDE0LjQ3LTE0LjYzLTcuMy03LjMxLTE5LjkxLDIwLjA5VjI5LjQ5aC0xMC4zMXY2Ni4yN2gxMC4zMXYtMTUuMjdsNS40Ni01LjUxLDIwLjY3LDIwLjhaIi8+CiAgICA8L2c+CiAgPC9nPgo8L3N2Zz4=">
+      <span class="tag">Tippekonkurranse</span>
+    </div>
+    <h1>VM-tippen i <span class="serif">BK</span> 2026</h1>
+    <p>Tipp deg gjennom verdens største fotballfest – fra gruppespill til finale</p>
+  </div>
+</div>
+<div class="status wrap" id="status" style="display:none"></div>
+
+<main class="wrap">
+  <!-- ===== TIPP ===== -->
+  <section id="view-tipp">
+    <!-- Registrering -->
+    <div id="reg" class="namebar">
+      <div class="sec"><h2>Bli med</h2><span class="note">registrer deg</span></div>
+      <div class="card">
+        <div class="field"><label class="fld" for="rName">Navn</label><input class="txt" id="rName" type="text" autocomplete="name" placeholder="Fornavn Etternavn" maxlength="40"></div>
+        <div class="field"><label class="fld" for="rPhone">Mobilnummer</label><input class="txt" id="rPhone" type="tel" autocomplete="tel" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="8 siffer"></div>
+        <button id="regBtn" class="btn btn-primary">Registrer / logg inn</button>
+        <div class="hint">Mobilnummeret er din innlogging. Bruker du et nummer som allerede er registrert, hentes tipset ditt opp så du kan fortsette.</div>
+      </div>
+    </div>
+
+    <!-- Innlogget -->
+    <div id="loggedin" class="hidden">
+      <div class="sec"><h2 id="hello"></h2><button class="linkbtn" id="logout">bytt bruker</button></div>
+
+      <div class="pswitch">
+        <button data-p="groups" id="tabGroups" class="active">Del 1 · Gruppespill</button>
+        <button data-p="knockout" id="tabKnockout">Del 2 · Sluttspill</button>
+      </div>
+
+      <!-- DEL 1 -->
+      <div id="phaseGroups">
+        <div class="sec"><h2 style="font-size:16px">Hvilke 2 lag får 1. og 2. plass i gruppen?</h2><span class="note">1 poeng pr. riktige</span></div>
+        <div id="groups"></div>
+        <div class="hint" id="grNote" style="text-align:center;margin-top:10px"></div>
+        <div class="submit-wrap"><button id="saveGroups" class="btn btn-primary">Lagre del 1</button></div>
+      </div>
+
+      <!-- DEL 2 -->
+      <div id="phaseKnockout" class="hidden">
+        <div class="sec"><h2 style="font-size:17px">Sluttspillet</h2><span class="note">marker hvem som går videre · 1 poeng hver</span></div>
+        <div id="koInfo"></div>
+        <div id="koMatches"></div>
+        <div class="hint" id="koSaveNote" style="text-align:center;margin:12px 0 4px">Valgene dine i del 2 lagres automatisk. Husk: en kamp som har startet låses – tipp før avspark!</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TABELL ===== -->
+  <section id="view-tabell" class="hidden">
+    <div class="sec"><h2>Topp<span class="serif">tabell</span></h2><span class="note" id="lbCount"></span></div>
+    <div class="prizes" id="prizes"></div>
+    <div id="lbStatus"></div>
+    <div id="leaderboard"></div>
+  </section>
+
+  <!-- ===== ARRANGØR ===== -->
+  <section id="view-admin" class="hidden">
+    <div class="sec"><h2>Arrangør</h2></div>
+    <div id="gate" class="card" style="padding:16px">
+      <div class="hint" style="margin:0 0 12px">Legg inn fasit, åpne sluttspillet og se deltakerlisten.</div>
+      <div class="field"><input class="txt" id="adminInput" type="password" placeholder="Arrangørkode"></div>
+      <button id="adminBtn" class="btn btn-ghost">Lås opp</button>
+    </div>
+
+    <div id="adminPanel" class="hidden">
+      <div class="sec"><h2 style="font-size:16px">Fase</h2></div>
+      <div class="phasebtns">
+        <button data-set="groups">Gruppespill</button>
+        <button data-set="knockout">Sluttspill</button>
+        <button data-set="done">Avsluttet</button>
+      </div>
+      <div class="hint">«Gruppespill» = del 1 åpen. «Sluttspill» = del 1 låses, del 2 åpnes. «Avsluttet» = alt låst.</div>
+
+      <div class="sec"><h2 style="font-size:16px">Fasit gruppespill</h2><span class="note">lag som gikk videre</span></div>
+      <div id="adminGroups"></div>
+      <button id="saveResG" class="btn btn-green btn-sm" style="margin-top:4px">Lagre gruppe-fasit</button>
+
+      <div class="sec"><h2 style="font-size:16px">Sluttspill-kamper</h2><span class="note">tildel lag</span></div>
+      <div class="banner">16-delsfinalene er lagt inn med avspark. Når gruppespillet er ferdig: velg lag i hver kamp under, og sett fasen til «Sluttspill» for å åpne tipping. Senere runder (åttedelsfinaler osv.) legger du til under når lagene er klare.</div>
+      <div class="koadd">
+        <select class="sel full" id="koRound">
+          <option value="16-delsfinale">16-delsfinale</option>
+          <option value="Åttedelsfinale">Åttedelsfinale</option>
+          <option value="Kvartfinale">Kvartfinale</option>
+          <option value="Semifinale">Semifinale</option>
+          <option value="Bronsefinale">Bronsefinale</option>
+          <option value="Finale">Finale</option>
+        </select>
+        <select class="sel" id="koA"></select>
+        <select class="sel" id="koB"></select>
+        <div class="full"><label class="fld">Avspark (tipping stenger her)</label><input class="txt" id="koStart" type="datetime-local"></div>
+        <button id="koAddBtn" class="btn btn-ghost btn-sm full">+ Legg til kamp</button>
+      </div>
+      <div class="kolist" id="koList" style="margin-top:12px"></div>
+
+      <div class="sec"><h2 style="font-size:16px">Fasit sluttspill</h2><span class="note">hvem gikk videre</span></div>
+      <div id="adminKo"></div>
+      <button id="saveResKo" class="btn btn-green btn-sm" style="margin-top:4px">Lagre sluttspill-fasit</button>
+
+      <div class="sec"><h2 style="font-size:16px">SMS-påminnelser</h2><span class="note" id="remCount"></span></div>
+      <div class="card" style="padding:16px">
+        <div class="hint" style="margin:0 0 12px">SMS sendes via en Supabase Edge Function – <b>Sveve-passordet ligger trygt på serveren</b>, ikke i nettsiden. «Send nå» sender til alle (eller de som mangler). De faste, automatiske SMS-ene (11. juni kl. 14:00 + 10 t før hver sluttspillkamp) styres av samme funksjon via en planlagt jobb (cron).</div>
+        <div class="koadd" style="margin-bottom:12px;display:none">
+          <div><label class="fld">Sveve brukernavn</label><input class="txt" id="svUser" type="text" placeholder="bkgruppen"></div>
+          <div><label class="fld">Avsender</label><input class="txt" id="svFrom" type="text" placeholder="BK"></div>
+          <div class="full"><label class="fld">Sveve passord</label><input class="txt" id="svPass" type="password" placeholder="(lagres kun lokalt)"></div>
+        </div>
+        <div class="field"><label class="fld">Mottakere</label>
+          <select class="sel" id="remTarget"><option value="missing">Kun de som ikke har levert</option><option value="all">Alle deltakere</option></select></div>
+        <div class="field"><label class="fld">Melding</label><textarea class="txt" id="remMsg" rows="3"></textarea></div>
+        <button id="svSend" class="btn btn-primary btn-sm">📲 Send SMS til alle nå (Sveve)</button>
+        <div style="display:flex;gap:8px;margin-top:8px"><a id="remSms" class="btn btn-ghost btn-sm" style="flex:1;text-decoration:none">💬 Åpne Meldinger</a><button id="remCopyNum" class="btn btn-ghost btn-sm" style="flex:1">Kopiér numre</button></div>
+        <div class="hint" id="remWho" style="margin-top:8px"></div>
+      </div>
+
+      <div class="sec"><h2 style="font-size:16px">Deltakere</h2><span class="note" id="contactCount"></span></div>
+      <div class="card" id="contacts" style="overflow:hidden"></div>
+      <button id="adminClose" class="linkbtn mlink">lås arrangørpanel</button>
+    </div>
+  </section>
+</main>
+
+<nav class="nav"><div class="nav-inner">
+  <button data-tab="tipp" class="active"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tipp</button>
+  <button data-tab="tabell"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"/></svg>Tabell</button>
+  <button data-tab="admin"><svg viewBox="0 0 24 24"><path d="M6 9V6a6 6 0 0 1 12 0v3"/><rect x="4" y="9" width="16" height="11" rx="2"/></svg>Arrangør</button>
+</div></nav>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ============================================================
+   KONFIGURASJON
+   ============================================================ */
+const CONFIG = {
+  // === Fyll inn fra Supabase (Project Settings -> API) ===
+  SUPABASE_URL: "https://nhneejuumqvrlirqlsor.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_4tn2Nu-CLl0p-VXy_y-yFQ_Qnn3xS3U",
+  EDGE_FN_URL: "",   // valgfri: URL til send-reminders edge function (for "Send SMS naa")
+  adminCode: "bk2026",                              // BYTT denne – kun arrangøren
+  deadlineGroups: new Date("2026-06-11T20:00:00"),  // del 1 (gruppespill) – siste frist. Lokal tid. Juster ved behov.
+  pTeam: 1,                                          // poeng per riktig lag videre fra gruppe (1./2. plass)
+  pAdvance: 1,                                       // poeng for riktig lag videre i sluttspill
+  // Premier – juster fritt. (Tallene i meldingen din var litt uklare, så her er et forslag du kan endre.)
+  prizes: [
+    {place:"1. plass", prize:"Valgfritt gavekort 3 000 kr"},
+    {place:"2. plass", prize:"Valgfritt gavekort 1 500 kr"},
+    {place:"3. plass", prize:"Valgfritt gavekort 750 kr"}
+  ]
+};
+
+const GROUPS = {
+  A:[["Mexico","🇲🇽"],["Sør-Afrika","🇿🇦"],["Sør-Korea","🇰🇷"],["Tsjekkia","🇨🇿"]],
+  B:[["Canada","🇨🇦"],["Bosnia-Hercegovina","🇧🇦"],["Qatar","🇶🇦"],["Sveits","🇨🇭"]],
+  C:[["Brasil","🇧🇷"],["Marokko","🇲🇦"],["Haiti","🇭🇹"],["Skottland","🏴󠁧󠁢󠁳󠁣󠁴󠁿"]],
+  D:[["USA","🇺🇸"],["Paraguay","🇵🇾"],["Australia","🇦🇺"],["Tyrkia","🇹🇷"]],
+  E:[["Tyskland","🇩🇪"],["Curaçao","🇨🇼"],["Elfenbenskysten","🇨🇮"],["Ecuador","🇪🇨"]],
+  F:[["Nederland","🇳🇱"],["Japan","🇯🇵"],["Sverige","🇸🇪"],["Tunisia","🇹🇳"]],
+  G:[["Belgia","🇧🇪"],["Egypt","🇪🇬"],["Iran","🇮🇷"],["New Zealand","🇳🇿"]],
+  H:[["Spania","🇪🇸"],["Kapp Verde","🇨🇻"],["Saudi-Arabia","🇸🇦"],["Uruguay","🇺🇾"]],
+  I:[["Frankrike","🇫🇷"],["Senegal","🇸🇳"],["Irak","🇮🇶"],["Norge","🇳🇴"]],
+  J:[["Argentina","🇦🇷"],["Algerie","🇩🇿"],["Østerrike","🇦🇹"],["Jordan","🇯🇴"]],
+  K:[["Portugal","🇵🇹"],["DR Kongo","🇨🇩"],["Usbekistan","🇺🇿"],["Colombia","🇨🇴"]],
+  L:[["England","🏴󠁧󠁢󠁥󠁮󠁧󠁿"],["Kroatia","🇭🇷"],["Ghana","🇬🇭"],["Panama","🇵🇦"]]
+};
+const FLAG={}; Object.values(GROUPS).flat().forEach(([n,f])=>FLAG[n]=f);
+const ALL=Object.values(GROUPS).flat().map(([n])=>n).sort((a,b)=>a.localeCompare(b,"no"));
+const fl=n=>FLAG[n]||"⚽";
+
+// 16-delsfinalene (Round of 32) – faste bracket-plasser og avspark (norsk tid).
+// Lagene (a/b) er tomme nå og tildeles i arrangørpanelet når gruppespillet er ferdig.
+const R32_BRACKET=[
+  {round:"16-delsfinale",aLabel:"2.-plass gr. A",bLabel:"2.-plass gr. B",start:"2026-06-28T21:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. C",bLabel:"2.-plass gr. F",start:"2026-06-29T19:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. E",bLabel:"3.-plass (A/B/C/D/F)",start:"2026-06-29T22:30"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. F",bLabel:"2.-plass gr. C",start:"2026-06-30T03:00"},
+  {round:"16-delsfinale",aLabel:"2.-plass gr. E",bLabel:"2.-plass gr. I",start:"2026-06-30T19:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. I",bLabel:"3.-plass (C/D/F/G/H)",start:"2026-06-30T23:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. A",bLabel:"3.-plass (C/E/F/H/I)",start:"2026-07-01T03:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. L",bLabel:"3.-plass (E/H/I/J/K)",start:"2026-07-01T18:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. G",bLabel:"3.-plass (A/E/H/I/J)",start:"2026-07-01T22:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. D",bLabel:"3.-plass (B/E/F/I/J)",start:"2026-07-02T02:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. H",bLabel:"2.-plass gr. J",start:"2026-07-02T21:00"},
+  {round:"16-delsfinale",aLabel:"2.-plass gr. K",bLabel:"2.-plass gr. L",start:"2026-07-03T01:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. B",bLabel:"3.-plass (D/E/I/J/L)",start:"2026-07-03T05:00"},
+  {round:"16-delsfinale",aLabel:"2.-plass gr. D",bLabel:"2.-plass gr. G",start:"2026-07-03T20:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. J",bLabel:"2.-plass gr. H",start:"2026-07-04T00:00"},
+  {round:"16-delsfinale",aLabel:"Vinner gr. K",bLabel:"3.-plass (D/E/I/J/L)",start:"2026-07-04T03:30"}
+].map((m,i)=>({id:"r32_"+(i+1),a:null,b:null,...m}));
+
+// Senere runder – tidspunkt i norsk tid. Lagene tildeles av arrangøren når runden er klar.
+const lbl=r=> r==="Finale"?"Vinner semifinale" : r==="Bronsefinale"?"Taper semifinale" : r==="Semifinale"?"Vinner kvartfinale" : r==="Kvartfinale"?"Vinner åttedelsfinale" : "Vinner 16-delsfinale";
+const LATER_KO=[
+  {round:"Åttedelsfinale",start:"2026-07-04T19:00"},
+  {round:"Åttedelsfinale",start:"2026-07-04T23:00"},
+  {round:"Åttedelsfinale",start:"2026-07-05T22:00"},
+  {round:"Åttedelsfinale",start:"2026-07-06T02:00"},
+  {round:"Åttedelsfinale",start:"2026-07-06T21:00"},
+  {round:"Åttedelsfinale",start:"2026-07-07T02:00"},
+  {round:"Åttedelsfinale",start:"2026-07-07T18:00"},
+  {round:"Åttedelsfinale",start:"2026-07-07T22:00"},
+  {round:"Kvartfinale",start:"2026-07-09T22:00"},
+  {round:"Kvartfinale",start:"2026-07-10T21:00"},
+  {round:"Kvartfinale",start:"2026-07-11T23:00"},
+  {round:"Kvartfinale",start:"2026-07-12T03:00"},
+  {round:"Semifinale",start:"2026-07-14T21:00"},
+  {round:"Semifinale",start:"2026-07-15T21:00"},
+  {round:"Bronsefinale",start:"2026-07-18T23:00"},
+  {round:"Finale",start:"2026-07-19T21:00"}
+].map((m,i)=>({id:"ko2_"+(i+1),a:null,b:null,aLabel:lbl(m.round),bLabel:lbl(m.round),...m}));
+const FULL_BRACKET=R32_BRACKET.concat(LATER_KO);
+
+/* ============================================================
+   LAGRING (felles for alle, shared=true). Bytt KUN dette
+   objektet hvis du senere hoster siden mot egen backend.
+   ============================================================ */
+// Delt database = Supabase (tabellen "kv"). Personlig data (innlogging/kladd) = nettleserens localStorage.
+const SB = (CONFIG.SUPABASE_URL && CONFIG.SUPABASE_ANON_KEY && CONFIG.SUPABASE_URL.indexOf("DITT-PROSJEKT")<0 && window.supabase)
+  ? window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY) : null;
+const _mem={};
+function lset(k,v){ try{ localStorage.setItem("bk:"+k, JSON.stringify(v)); }catch(e){ _mem["L:"+k]=v; } }
+function lget(k){ try{ const s=localStorage.getItem("bk:"+k); return s?JSON.parse(s):null; }catch(e){ return (_mem["L:"+k]!==undefined)?_mem["L:"+k]:null; } }
+const DB={
+  async set(k,v){ if(SB){ const {error}=await SB.from("kv").upsert({key:k,value:v}); if(error)console.error("DB.set",error); return; } _mem[k]=v; },
+  async get(k){ if(SB){ const {data,error}=await SB.from("kv").select("value").eq("key",k).maybeSingle(); if(error)console.error("DB.get",error); return data?data.value:null; } return (_mem[k]!==undefined)?_mem[k]:null; },
+  async del(k){ if(SB){ await SB.from("kv").delete().eq("key",k); return; } delete _mem[k]; },
+  async list(p){ if(SB){ const {data,error}=await SB.from("kv").select("key").like("key",p+"%"); if(error)console.error("DB.list",error); return data?data.map(r=>r.key):[]; } return Object.keys(_mem).filter(x=>x.startsWith(p)); },
+  async setLocal(k,v){ lset(k,v); },
+  async getLocal(k){ return lget(k); }
+};
+
+/* ============================================================
+   APP
+   ============================================================ */
+const $=s=>document.querySelector(s);
+const slug=s=>s.trim().toLowerCase().replace(/[^a-z0-9æøå]+/g,"-").replace(/^-|-$/g,"");
+const mid=m=>String(m||"").replace(/\D/g,"");  // mobil = unik ID (8 siffer)
+let META={phase:"groups",ko:[]};      // arrangør-styrt
+let RESULTS={advance:{},ko:{}};       // fasit
+const state={ user:null, pv:"groups",
+  advance:Object.fromEntries(Object.keys(GROUPS).map(g=>[g,[]])), ko:{} };
+const adminG=Object.fromEntries(Object.keys(GROUPS).map(g=>[g,[]]));
+let dirtyGroups=false;  // ulagrede (kun-i-nettleser) endringer i del 1
+const emptyAdvance=()=>Object.fromEntries(Object.keys(GROUPS).map(g=>[g,[]]));
+
+const groupsLocked=()=>META.phase!=="groups"||Date.now()>CONFIG.deadlineGroups.getTime();
+const koEditable=()=>META.phase==="knockout";
+const matchStart=m=>m.start?new Date(m.start):null;
+const koResolved=r=>!!(r&&r.adv);
+function matchLocked(m){ const st=matchStart(m);
+  return META.phase==="done" || koResolved(RESULTS.ko[m.id]) || (st && Date.now()>st.getTime()); }
+const findMatch=id=>META.ko.find(m=>m.id===id)||{};
+const teamsSet=m=>!!(m.a&&m.b);
+const started=m=>{const s=matchStart(m);return s&&Date.now()>s.getTime();};
+function fmtStart(m){ const s=matchStart(m); return s?s.toLocaleString("no-NO",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}):""; }
+// Del 2: marker hvem som går videre (etter ev. ekstraomganger/straffer). Ingen resultattipping.
+function advChoice(m,sel,locked){
+  const opt=(team)=>'<button class="koteam'+(sel===team?" on":"")+(locked?" ro":"")+'" data-id="'+m.id+'" data-adv="'+esc(team)+'" '+(locked?"disabled":"")+'>'+
+    '<span class="flag">'+fl(team)+'</span><span class="nm">'+esc(team)+'</span><span class="tick">✓</span></button>';
+  return '<div class="kochoice">'+opt(m.a)+opt(m.b)+'</div>';
+}
+
+/* ---- init ---- */
+async function init(){
+  META=await DB.get("meta")||{phase:"groups",ko:FULL_BRACKET.map(m=>({...m}))};
+  if(!META.ko)META.ko=[];
+  // Sørg for at alle runder finnes (legg til manglende kamper uten å røre tildelte lag)
+  const have=new Set(META.ko.map(m=>m.id)); let added=false;
+  FULL_BRACKET.forEach(m=>{ if(!have.has(m.id)){ META.ko.push({...m}); added=true; } });
+  if(added) await DB.set("meta",META);
+  state.pv = META.phase==="groups" ? "groups" : "knockout";
+  RESULTS=await DB.get("results")||{advance:{},ko:{}};
+  fillSel($("#koA")); fillSel($("#koB"));
+  $("#prizes").innerHTML=(CONFIG.prizes||[]).map((p,i)=>'<div class="prize'+(i===0?" g1":"")+'"><div class="pl">'+(i===0?"🏆 ":"")+esc(p.place)+'</div><div class="pz">'+esc(p.prize)+'</div></div>').join("");
+  renderStatus();
+  const me=await DB.getLocal("me");           // husk innlogging i nettleseren
+  if(me&&me.mobile){ await loginUser(me.name,me.mobile,true); } else { renderTipp(); }
+  if(!SB){ const b=document.createElement("div"); b.className="banner warn"; b.style.margin="14px 16px";
+    b.innerHTML="⚠️ Databasen er ikke koblet til. Fyll inn SUPABASE_URL og SUPABASE_ANON_KEY øverst i &lt;script&gt;-koden."; $("#status").after(b); }
+}
+function fillSel(sel){ sel.innerHTML='<option value="">Velg lag…</option>'; ALL.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=fl(t)+"  "+t;sel.appendChild(o);}); }
+
+function renderStatus(){
+  const s=$("#status"); const ph=META.phase;
+  const c=(t,cls)=>'<span class="chip '+(cls||"")+'">'+t+'</span>';
+  let html="";
+  if(ph==="groups") html=c("Del 1 åpen","on")+c("Del 2 åpner etter gruppespillet");
+  else if(ph==="knockout") html=c("Del 1 låst","lock")+c("Del 2 åpen","on");
+  else html=c("Konkurransen er avsluttet","lock");
+  s.innerHTML=html;
+}
+
+/* ---- felles gruppe-UI ---- */
+function buildGroups(host,sel,onTog,readonly,showStatus){
+  host.innerHTML="";
+  Object.entries(GROUPS).forEach(([g,teams])=>{
+    const picks=sel[g]||[];
+    const fasit=(RESULTS.advance?.[g]||[]);
+    const haveFasit = showStatus && fasit.length>=1;
+    let headRight;
+    if(haveFasit){
+      const hits=picks.filter(p=>fasit.includes(p)).length;
+      const cls=hits>=2?"st-2":hits===1?"st-1":"st-0";
+      const txt=hits>=2?"2/2 riktig":hits===1?"1/2 riktig":"0 riktig";
+      headRight='<div class="gstatus '+cls+'">'+txt+'</div>';
+    } else {
+      headRight='<div class="counter'+(picks.length>=2?" full":"")+'">'+picks.length+'/2</div>';
+    }
+    const card=document.createElement("div"); card.className="group";
+    card.innerHTML='<div class="group-head"><div class="gname">Gruppe <b>'+g+'</b></div>'+headRight+'</div>';
+    teams.forEach(([name,flag])=>{
+      const on=picks.includes(name);
+      const correct=haveFasit && fasit.includes(name);
+      const b=document.createElement("button");
+      b.className="team"+(on?" on":"")+(!on&&picks.length>=2?" dim":"")+(readonly?" ro":"")+(correct?" correct":"");
+      b.innerHTML='<span class="flag">'+flag+'</span><span class="nm">'+name+'</span><span class="tick">'+(correct?'★':'✓')+'</span>';
+      if(!readonly) b.onclick=()=>onTog(g,name);
+      card.appendChild(b);
+    });
+    host.appendChild(card);
+  });
+}
+function tog(sel,g,name){ const a=sel[g]; const i=a.indexOf(name);
+  if(i>=0)a.splice(i,1); else{ if(a.length>=2){flash("Maks 2 i gruppe "+g);return false;} a.push(name);} return true; }
+
+/* ---- TIPP ---- */
+function renderTipp(){
+  if(!state.user){ $("#reg").classList.remove("hidden"); $("#loggedin").classList.add("hidden"); return; }
+  $("#reg").classList.add("hidden"); $("#loggedin").classList.remove("hidden");
+  $("#hello").innerHTML="Hei, <span class='serif'>"+esc(state.user.name.split(" ")[0])+"</span>";
+  // Del 2 er alltid synlig – under gruppespillet vises oppsettet, tipping åpner når gruppespillet er ferdig
+  $("#tabKnockout").disabled=false;
+  $("#tabGroups").classList.toggle("active",state.pv==="groups");
+  $("#tabKnockout").classList.toggle("active",state.pv==="knockout");
+  $("#phaseGroups").classList.toggle("hidden",state.pv!=="groups");
+  $("#phaseKnockout").classList.toggle("hidden",state.pv!=="knockout");
+  if(state.pv==="groups") renderGroupPicks(); else renderKoPicks();
+}
+function saveDraftGroups(){ if(state.user) DB.setLocal("draftG:"+mid(state.user.mobile),{advance:state.advance,dirty:dirtyGroups,ts:Date.now()}); }
+function renderGroupPicks(){
+  const ro=groupsLocked();
+  buildGroups($("#groups"),state.advance,(g,n)=>{ if(tog(state.advance,g,n)){ dirtyGroups=true; saveDraftGroups(); renderGroupPicks(); } },ro,true);
+  const btn=$("#saveGroups"), note=$("#grNote");
+  const tot=Object.values(state.advance).reduce((a,b)=>a+b.length,0);
+  if(ro){ btn.disabled=true; btn.textContent=META.phase!=="groups"?"Del 1 er låst":"Fristen er passert";
+    const fz=RESULTS.advance||{}; const hasF=Object.values(fz).some(a=>a&&a.length);
+    if(hasF){ let hit=0; Object.keys(GROUPS).forEach(g=>{ const f=fz[g]||[]; hit+=(state.advance[g]||[]).filter(p=>f.includes(p)).length; });
+      note.textContent="Du fikk "+hit+" av 24 riktig i gruppespillet. ★ = riktig svar."; }
+    else note.textContent = tot?("Du valgte "+tot+"/24."):"";
+    return; }
+  if(tot!==24){ btn.disabled=true; btn.textContent="Velg alle ("+tot+"/24)"; }
+  else if(dirtyGroups){ btn.disabled=false; btn.textContent="Bekreft og lagre del 1"; }
+  else { btn.disabled=true; btn.textContent="Lagret ✓"; }
+  note.textContent = dirtyGroups
+    ? "Valgene lagres automatisk i nettleseren. Husk å trykke «Bekreft og lagre» – først da teller de på tabellen."
+    : (tot===24 ? "Lagret og bekreftet ✓ Du kan endre frem til fristen." : "Valgene lagres automatisk mens du tipper.");
+}
+$("#saveGroups").onclick=async()=>{ if(groupsLocked())return;
+  await DB.set("pick:"+mid(state.user.mobile),{advance:state.advance,ts:Date.now()});
+  dirtyGroups=false; saveDraftGroups();
+  flash("✅ Del 1 bekreftet og lagret!"); renderGroupPicks(); };
+
+function koCard(m){
+  const ready=teamsSet(m); const mine=state.ko[m.id]||{}; const res=RESULTS.ko[m.id];
+  const tippable = META.phase==="knockout" && ready && !started(m) && !koResolved(res);
+  const d=document.createElement("div"); d.className="match"+(!tippable?" done":"");
+  const head='<div class="rnd">'+esc(m.round)+(matchStart(m)?(' · '+fmtStart(m)):'')+'</div>';
+  let body,foot="";
+  if(!ready){
+    body='<div class="kochoice"><div class="koteam ro"><span class="nm">'+esc(m.aLabel||"Lag 1")+'</span></div>'+
+         '<div class="koteam ro"><span class="nm">'+esc(m.bLabel||"Lag 2")+'</span></div></div>';
+    foot='<div class="startline">Lagene avgjøres når runden er klar</div>';
+  } else {
+    body=advChoice(m,mine.adv,!tippable);
+    if(koResolved(res)){ const hit=mine.adv&&mine.adv===res.adv;
+      foot='<div class="lockline'+(mine.adv&&!hit?" shut":"")+'">🔒 Videre: '+fl(res.adv)+' '+esc(res.adv)+' · '+(mine.adv?(hit?"1 poeng ✓":"feil tips"):"du tippet ikke")+'</div>'; }
+    else if(META.phase==="done") foot='<div class="lockline shut">🔒 Konkurransen er avsluttet</div>';
+    else if(started(m)) foot='<div class="lockline shut">🔒 Kampen er i gang – låst. '+(mine.adv?("Du tippet "+esc(mine.adv)):"Du tippet ikke – 0 poeng")+'</div>';
+    else if(META.phase!=="knockout") foot='<div class="startline">Åpner for tipping når gruppespillet er ferdig</div>';
+    else if(matchStart(m)) foot='<div class="startline">⏱ Stenger ved avspark · '+fmtStart(m)+'</div>';
+  }
+  d.innerHTML=head+body+foot;
+  if(tippable) bindKo(d,m);
+  return d;
+}
+function renderKoPicks(){
+  const host=$("#koMatches"); host.innerHTML="";
+  $("#koInfo").innerHTML = (META.phase==="knockout")
+    ? '<div class="banner">Sluttspillet er åpent – marker hvem du tror går videre. Neste kamp ligger øverst. Hver kamp stenger ved avspark, og valget lagres automatisk.</div>'
+    : '<div class="banner">Del 2 åpner for tipping når gruppespillet er ferdig. Lagene fylles inn da – her ser du allerede oppsettet og avspark for alle sluttspillkampene.</div>';
+  if(!META.ko.length) return;
+  const ms=META.ko.slice().sort((x,y)=>(matchStart(x)?.getTime()||0)-(matchStart(y)?.getTime()||0));
+  const isPast=m=> META.phase==="done" || started(m) || koResolved(RESULTS.ko[m.id]);
+  const upcoming=ms.filter(m=>!isPast(m));
+  const past=ms.filter(isPast);                       // spilte/påbegynte
+  if(past.length){                                    // tidligere kamper ØVERST, lukket
+    const wrap=document.createElement("div"); wrap.className="hidden"; wrap.style.marginTop="10px";
+    past.slice().reverse().forEach(m=> wrap.appendChild(koCard(m)));   // nyeste spilte øverst
+    const toggle=document.createElement("button"); toggle.className="btn btn-ghost btn-sm"; toggle.style.marginBottom="6px";
+    const label=h=>(h?"Vis":"Skjul")+" tidligere kamper ("+past.length+")";
+    toggle.textContent=label(true);
+    toggle.onclick=()=>{ toggle.textContent=label(!wrap.classList.toggle("hidden")); };
+    host.appendChild(toggle); host.appendChild(wrap);
+  }
+  upcoming.forEach(m=> host.appendChild(koCard(m)));  // kommende kamper, neste først
+  if(!upcoming.length && past.length)
+    host.insertAdjacentHTML("beforeend",'<div class="hint" style="text-align:center;margin:6px 0">Ingen kommende kamper akkurat nå.</div>');
+}
+function bindKo(card,m){
+  card.querySelectorAll('.koteam[data-adv]').forEach(b=>b.onclick=async()=>{
+    if(started(m)||META.phase!=="knockout"||koResolved(RESULTS.ko[m.id]))return;
+    const s=state.ko[m.id]=state.ko[m.id]||{}; s.adv=b.dataset.adv;
+    card.querySelectorAll('.koteam').forEach(x=>x.classList.toggle("on",x.dataset.adv===s.adv));
+    await DB.set("kopick:"+mid(state.user.mobile),{ko:state.ko,ts:Date.now()});  // autolagring – tipset er låst før avspark
+    flash("Lagret ✓");
+  });
+}
+
+/* ---- registrering / innlogging (mobil = unik ID) ---- */
+$("#rPhone").addEventListener("input",e=>{ e.target.value=e.target.value.replace(/\D/g,"").slice(0,8); });
+async function loginUser(name,phone,silent){
+  const id=mid(phone); const key="user:"+id;
+  const existing=await DB.get(key);
+  // Mobilnummer er unik ID: finnes nummeret, logger man inn på DEN brukeren (samme navn).
+  const user = existing ? {name:existing.name, mobile:existing.mobile||phone, ts:existing.ts}
+                        : {name, mobile:phone, ts:Date.now()};
+  await DB.set(key,user); state.user=user;
+  await DB.setLocal("me",{name:user.name,mobile:user.mobile});   // husk innlogging
+  const p=await DB.get("pick:"+id); state.advance = (p&&p.advance)?p.advance:emptyAdvance();
+  const k=await DB.get("kopick:"+id); state.ko = (k&&k.ko)?k.ko:{};
+  const draft=await DB.getLocal("draftG:"+id);               // hent lokal kladd (kan være ulagret)
+  if(draft&&draft.advance){ state.advance=draft.advance; dirtyGroups=!!draft.dirty; } else dirtyGroups=false;
+  if(!silent) flash(existing?("Velkommen tilbake, "+user.name.split(" ")[0]+"!"):"Du er med! 🎉");
+  renderTipp();
+}
+$("#regBtn").onclick=async()=>{
+  const name=$("#rName").value.trim(), phone=$("#rPhone").value.trim();
+  if(!name){ flash("Fyll inn navnet ditt"); return; }
+  if(mid(phone).length!==8){ flash("Mobilnummer må være 8 siffer"); return; }
+  await loginUser(name,phone,false);
+};
+$("#logout").onclick=async()=>{ state.user=null; dirtyGroups=false;
+  await DB.setLocal("me",null);
+  state.advance=emptyAdvance(); state.ko={};
+  $("#rName").value=$("#rPhone").value=""; renderTipp(); };
+
+/* ---- TABELL ---- */
+function scoreUser(pick,kopick){
+  let g=0,gh=0; // gruppe
+  Object.keys(GROUPS).forEach(grp=>{ (pick.advance?.[grp]||[]).forEach(t=>{
+    if((RESULTS.advance?.[grp]||[]).includes(t)){ g+=CONFIG.pTeam; gh++; } }); });
+  let k=0,kh=0;
+  META.ko.forEach(m=>{ const res=RESULTS.ko?.[m.id]; const mine=kopick.ko?.[m.id]; if(!koResolved(res)||!mine||!mine.adv)return;
+    if(mine.adv===res.adv){ k+=CONFIG.pAdvance; kh++; }
+  });
+  const hasG=Object.values(RESULTS.advance||{}).some(a=>a&&a.length);
+  const hasK=Object.values(RESULTS.ko||{}).some(koResolved);
+  return {total:g+k,g,k,gh,kh,hasResults:hasG||hasK};
+}
+async function renderTabell(){
+  const keys=await DB.list("user:"); const rows=[];
+  for(const uk of keys){ const u=await DB.get(uk); if(!u)continue;
+    const sl=mid(u.mobile);
+    const pick=await DB.get("pick:"+sl)||{advance:{}};
+    const kopick=await DB.get("kopick:"+sl)||{ko:{}};
+    rows.push({u,s:scoreUser(pick,kopick)});
+  }
+  $("#lbCount").textContent=rows.length?rows.length+" deltakere":"";
+  const any=rows.some(r=>r.s.hasResults);
+  $("#lbStatus").innerHTML=any?"":'<div class="banner">Resultater ikke lagt inn ennå – tabellen viser hvem som er med.</div>';
+  if(!rows.length){ $("#leaderboard").innerHTML='<div class="empty"><div class="big">Ingen deltakere ennå</div>Gå til <b>Tipp</b> og bli den første.</div>'; return; }
+  rows.sort((a,b)=> any?(b.s.total-a.s.total||a.u.name.localeCompare(b.u.name)) : a.u.name.localeCompare(b.u.name));
+  const me=state.user?mid(state.user.mobile):"";
+  const lb=$("#leaderboard"); lb.innerHTML="";
+  rows.forEach((r,i)=>{
+    const mine=me&&mid(r.u.mobile)===me;
+    const row=document.createElement("div"); row.className="row"+(any&&i<3?" p"+(i+1):"")+(mine?" you":"");
+    const d = any ? (r.s.g+"p gruppe · "+r.s.k+"p sluttspill") : "klar til kamp";
+    row.innerHTML='<div class="pos">'+(any?(i+1):"•")+'</div>'+
+      '<div class="who"><div class="n">'+esc(r.u.name)+(mine?'<span class="badge">DEG</span>':'')+'</div><div class="d">'+d+'</div></div>'+
+      (any?'<div class="pts">'+r.s.total+'<small>POENG</small></div>':'<div class="pts" style="font-size:14px;color:var(--muted)">Med ✓</div>');
+    lb.appendChild(row);
+  });
+}
+
+/* ---- ARRANGØR ---- */
+let unlocked=false;
+$("#adminBtn").onclick=async()=>{
+  if($("#adminInput").value!==CONFIG.adminCode){ flash("Feil kode"); return; }
+  unlocked=true; $("#gate").classList.add("hidden"); $("#adminPanel").classList.remove("hidden");
+  Object.keys(GROUPS).forEach(g=>adminG[g]=(RESULTS.advance?.[g]||[]).slice());
+  renderAdmin();
+};
+$("#adminClose").onclick=()=>{ unlocked=false; $("#adminPanel").classList.add("hidden"); $("#gate").classList.remove("hidden"); $("#adminInput").value=""; };
+
+function renderAdmin(){
+  document.querySelectorAll(".phasebtns button").forEach(b=>b.classList.toggle("cur",b.dataset.set===META.phase));
+  buildGroups($("#adminGroups"),adminG,(g,n)=>{ if(tog(adminG,g,n)) renderAdmin(); },false);
+  renderKoList(); renderAdminKo(); renderContacts(); renderReminders();
+}
+document.querySelectorAll(".phasebtns button").forEach(b=>b.onclick=async()=>{
+  META.phase=b.dataset.set; await DB.set("meta",META); renderStatus(); renderAdmin();
+  flash("Fase: "+b.textContent);
+});
+$("#koAddBtn").onclick=async()=>{
+  const a=$("#koA").value,b=$("#koB").value,r=$("#koRound").value,st=$("#koStart").value;
+  if(!a||!b){ flash("Velg begge lag"); return; }
+  if(a===b){ flash("To forskjellige lag"); return; }
+  META.ko.push({id:"m"+Date.now().toString(36),round:r,a,b,start:st||null});
+  await DB.set("meta",META); $("#koA").value="";$("#koB").value="";$("#koStart").value="";
+  renderKoList(); renderAdminKo(); flash("Kamp lagt til");
+};
+function teamOptions(sel){ return '<option value="">– ikke satt –</option>'+ALL.map(t=>'<option value="'+esc(t)+'"'+(sel===t?" selected":"")+'>'+fl(t)+' '+esc(t)+'</option>').join(""); }
+function renderKoList(){
+  const host=$("#koList"); host.innerHTML="";
+  if(!META.ko.length){ host.innerHTML='<div class="hint">Ingen kamper lagt inn ennå.</div>'; return; }
+  const ms=META.ko.slice().sort((x,y)=>(matchStart(x)?.getTime()||0)-(matchStart(y)?.getTime()||0));
+  ms.forEach(m=>{ const x=document.createElement("div"); x.className="kxrow";
+    x.innerHTML='<div class="kxhead"><span>'+esc(m.round)+(matchStart(m)?(' · '+fmtStart(m)):' · (uten avspark)')+'</span><button class="x" data-id="'+m.id+'">✕</button></div>'+
+      '<div class="kxassign"><div><label class="fld">'+esc(m.aLabel||"Lag 1")+'</label><select class="sel ksa" data-id="'+m.id+'" data-k="a">'+teamOptions(m.a)+'</select></div>'+
+      '<div><label class="fld">'+esc(m.bLabel||"Lag 2")+'</label><select class="sel ksa" data-id="'+m.id+'" data-k="b">'+teamOptions(m.b)+'</select></div></div>';
+    host.appendChild(x); });
+  host.querySelectorAll(".x").forEach(btn=>btn.onclick=async()=>{
+    META.ko=META.ko.filter(m=>m.id!==btn.dataset.id); delete RESULTS.ko[btn.dataset.id];
+    await DB.set("meta",META); await DB.set("results",RESULTS); renderKoList(); renderAdminKo();
+  });
+  host.querySelectorAll(".ksa").forEach(s=>s.onchange=async()=>{
+    const m=findMatch(s.dataset.id); if(!m)return; m[s.dataset.k]=s.value||null;
+    await DB.set("meta",META); renderAdminKo(); flash("Lag oppdatert");
+  });
+}
+function renderAdminKo(){
+  const host=$("#adminKo"); host.innerHTML="";
+  if(!META.ko.length){ host.innerHTML='<div class="hint">Legg inn kamper først.</div>'; return; }
+  const ms=META.ko.slice().sort((x,y)=>(matchStart(x)?.getTime()||0)-(matchStart(y)?.getTime()||0));
+  ms.forEach(m=>{ const res=RESULTS.ko[m.id]||{};
+    const d=document.createElement("div"); d.className="match";
+    if(!teamsSet(m)){ d.innerHTML='<div class="rnd">'+esc(m.round)+(matchStart(m)?(' · '+fmtStart(m)):'')+'</div>'+
+      '<div class="advnote dim">'+esc(m.aLabel||"Lag 1")+' vs '+esc(m.bLabel||"Lag 2")+' – tildel lagene over først.</div>';
+      host.appendChild(d); return; }
+    d.innerHTML='<div class="rnd">'+esc(m.round)+(matchStart(m)?(' · '+fmtStart(m)):'')+'</div>'+
+      '<div class="advnote dim" style="margin-bottom:6px">Hvem gikk videre?</div>'+advChoice(m,res.adv,false);
+    host.appendChild(d);
+    d.querySelectorAll('.koteam').forEach(b=>b.onclick=()=>{
+      const r=RESULTS.ko[m.id]=RESULTS.ko[m.id]||{}; r.adv=b.dataset.adv;
+      d.querySelectorAll('.koteam').forEach(x=>x.classList.toggle("on",x.dataset.adv===r.adv));
+    });
+  });
+}
+$("#saveResG").onclick=async()=>{ RESULTS.advance=JSON.parse(JSON.stringify(adminG));
+  await DB.set("results",RESULTS); flash("✅ Gruppe-fasit lagret"); };
+$("#saveResKo").onclick=async()=>{ await DB.set("results",RESULTS); flash("✅ Sluttspill-fasit lagret"); renderAdminKo(); };
+
+async function renderContacts(){
+  const keys=await DB.list("user:"); const host=$("#contacts"); host.innerHTML="";
+  const users=[]; for(const k of keys){ const u=await DB.get(k); if(u)users.push(u); }
+  users.sort((a,b)=>a.name.localeCompare(b.name));
+  $("#contactCount").textContent=users.length?users.length+" stk":"";
+  if(!users.length){ host.innerHTML='<div class="contact"><span>Ingen påmeldte ennå.</span></div>'; return; }
+  users.forEach(u=>{ const d=document.createElement("div"); d.className="contact";
+    d.innerHTML='<b>'+esc(u.name)+'</b><br><span>'+esc(u.mobile)+'</span>'; host.appendChild(d); });
+}
+
+/* ---- faner ---- */
+function switchTab(t){
+  ["tipp","tabell","admin"].forEach(x=>$("#view-"+x).classList.toggle("hidden",x!==t));
+  document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
+  if(t==="tabell") renderTabell();
+  if(t==="tipp") renderTipp();
+}
+document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+document.querySelectorAll(".pswitch button").forEach(b=>b.onclick=()=>{ if(b.disabled)return; state.pv=b.dataset.p; renderTipp(); });
+
+/* ---- påminnelser (e-post / SMS) ---- */
+let remData=[];
+const cleanNum=s=>String(s).replace(/[^\d+]/g,"");
+function defaultRemMsg(){
+  return META.phase==="groups"
+    ? "Hei! Velg de to beste lagene i hver pulje i VM-tippen i BK 2026 før fristen. Lenke: [lim inn lenken]. Lykke til!"
+    : "Hei! Det er sluttspillkamp i dag i VM-tippen i BK 2026. Husk å tippe hvem som går videre FØR avspark! Lenke: [lim inn lenken].";
+}
+async function renderReminders(){
+  const keys=await DB.list("user:"); remData=[];
+  for(const k of keys){ const u=await DB.get(k); if(!u)continue;
+    let done;
+    if(META.phase==="groups"){ const p=await DB.get("pick:"+mid(u.mobile)); done=!!(p&&p.advance&&Object.values(p.advance).some(a=>a.length)); }
+    else { const p=await DB.get("kopick:"+mid(u.mobile)); done=!!(p&&p.ko&&Object.keys(p.ko).length); }
+    remData.push({u,done});
+  }
+  const missing=remData.filter(x=>!x.done).length;
+  $("#remCount").textContent=remData.length?(missing+" mangler"):"";
+  if(!$("#remMsg").value.trim()) $("#remMsg").value=defaultRemMsg();
+  const sv=await DB.getLocal("sveve")||{};
+  $("#svUser").value=sv.user||""; $("#svFrom").value=sv.from||"BK"; $("#svPass").value=sv.passwd||"";
+  buildRemLinks();
+}
+function remList(){ const all=$("#remTarget").value==="all"; return all?remData:remData.filter(x=>!x.done); }
+function buildRemLinks(){
+  const list=remList();
+  const nums=list.map(x=>cleanNum(x.u.mobile)).join(",");
+  const msg=$("#remMsg").value;
+  $("#remSms").href="sms:"+nums+"?&body="+encodeURIComponent(msg);
+  $("#remWho").textContent=list.length?("Mottakere ("+list.length+"): "+list.map(x=>x.u.name).join(", ")):"Ingen i dette utvalget – alle har levert! 🎉";
+}
+async function copyTxt(t){
+  if(!t){ flash("Ingen mottakere"); return; }
+  try{ await navigator.clipboard.writeText(t); flash("Kopiert ✓"); }
+  catch(e){ const ta=document.createElement("textarea"); ta.value=t; ta.style.position="fixed"; ta.style.opacity="0";
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand("copy"); flash("Kopiert ✓"); }catch(_){ flash("Marker og kopiér manuelt"); } ta.remove(); }
+}
+$("#remTarget").onchange=buildRemLinks;
+$("#remMsg").oninput=buildRemLinks;
+$("#remCopyNum").onclick=()=>copyTxt(remList().map(x=>cleanNum(x.u.mobile)).join(", "));
+// Lagre Sveve-nøkler kun lokalt (denne enheten), aldri i den delte databasen
+async function saveSveve(){ await DB.setLocal("sveve",{user:$("#svUser").value.trim(),passwd:$("#svPass").value,from:($("#svFrom").value.trim()||"BK")}); }
+["svUser","svPass","svFrom"].forEach(id=>$("#"+id).onchange=saveSveve);
+// Send via Sveve nå (best effort – kan blokkeres av nettleser i forhåndsvisning; virker på eget domene)
+$("#svSend").onclick=async()=>{
+  const list=remList(); if(!list.length){ flash("Ingen mottakere"); return; }
+  const msg=$("#remMsg").value;
+  if(!CONFIG.EDGE_FN_URL){ flash("Sett EDGE_FN_URL for utsending, eller bruk «Åpne Meldinger»"); return; }
+  if(!confirm("Sende SMS til "+list.length+" mottakere nå?")) return;
+  try{
+    const res=await fetch(CONFIG.EDGE_FN_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+CONFIG.SUPABASE_ANON_KEY},
+      body:JSON.stringify({mode:"broadcast",adminCode:CONFIG.adminCode,message:msg,numbers:list.map(x=>cleanNum(x.u.mobile))})});
+    const out=await res.json().catch(()=>({}));
+    flash(res.ok?("Sendt: "+(out.sent??list.length)+" SMS"):("Feil: "+(out.error||res.status)));
+  }catch(e){ flash("Kunne ikke nå utsendingstjenesten"); }
+};
+
+/* ---- hjelpere ---- */
+let tT; function flash(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove("show"),1900); }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+init();
+</script>
+</body>
+</html>
