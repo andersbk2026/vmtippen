@@ -19,13 +19,14 @@
   --gold:#caa64a; --silver:#9aa0c2; --bronze:#bd8a55; --danger:#c2443a;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0}
+html,body{margin:0;padding:0;overflow-x:hidden;max-width:100%;width:100%}
 body{
   font-family:'Inter',system-ui,Arial,sans-serif;
   background:var(--cream); color:var(--ink); line-height:1.5;
   min-height:100dvh; padding-bottom:92px; -webkit-font-smoothing:antialiased;
   font-weight:500;
   touch-action:manipulation;   /* fjerner dobbelttrykk-zoom på mobil, beholder kniping */
+  overflow-x:hidden; max-width:100%;
 }
 .wrap{max-width:680px;margin:0 auto;padding:0 16px}
 .serif{font-family:'EB Garamond',Georgia,serif;font-style:italic;font-weight:400}
@@ -379,8 +380,8 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
    ============================================================ */
 const CONFIG = {
   // === Fyll inn fra Supabase (Project Settings -> API) ===
-  SUPABASE_URL: "https://nhneejuumqvrlirqlsor.supabase.co",
-  SUPABASE_ANON_KEY: "sb_publishable_4tn2Nu-CLl0p-VXy_y-yFQ_Qnn3xS3U",
+  SUPABASE_URL: "https://DITT-PROSJEKT.supabase.co",
+  SUPABASE_ANON_KEY: "DIN-ANON-KEY",
 
   deadlineGroups: new Date("2026-06-11T20:00:00"),  // del 1 (gruppespill) – siste frist. Lokal tid. Juster ved behov.
   pTeam: 1,                                          // poeng per riktig lag videre fra gruppe (1./2. plass)
@@ -750,7 +751,7 @@ function setAdmin(on){
   $("#gate").classList.toggle("hidden",on);
   $("#adminPanel").classList.toggle("hidden",!on);
   if(on){ Object.keys(GROUPS).forEach(g=>adminG[g]=(RESULTS.advance?.[g]||[]).slice()); renderAdmin();
-    DB.getLocal("fdtoken").then(t=>{ if($("#fdToken")) $("#fdToken").value=t||""; }); }
+    adminCfgGet("fdtoken").then(t=>{ if($("#fdToken")) $("#fdToken").value=t||""; }); }
 }
 function setupAdminGate(){
   $("#gateAuth").classList.toggle("hidden",!IS_HOSTED);
@@ -809,10 +810,10 @@ function normWC(standingsArr,matchesArr){
   return {standings,ko};
 }
 
-$("#fdToken").onchange=()=>DB.setLocal("fdtoken",$("#fdToken").value.trim());
+$("#fdToken").onchange=()=>adminCfgSet("fdtoken",$("#fdToken").value.trim());
 $("#importBtn").onclick=async()=>{
-  const token=($("#fdToken").value||"").trim(); if(token) await DB.setLocal("fdtoken",token);
-  const tok=token||(await DB.getLocal("fdtoken"))||"";
+  const token=($("#fdToken").value||"").trim(); if(token) await adminCfgSet("fdtoken",token);
+  const tok=token||(await adminCfgGet("fdtoken"))||"";
   if(!tok){ $("#importNote").textContent="Lim inn football-data.org-token først (gratis på football-data.org)."; return; }
   $("#importNote").textContent="Henter …";
   let d;
@@ -933,10 +934,20 @@ document.querySelectorAll(".pswitch button").forEach(b=>b.onclick=()=>{ if(b.dis
 /* ---- påminnelser (e-post / SMS) ---- */
 let remData=[];
 const cleanNum=s=>String(s).replace(/[^\d+]/g,"");
+// Arrangør-innstillinger (Sveve-nøkler + football-token). Lagres i admin_kv –
+// kun innlogget arrangør har tilgang (RLS) – med lokal kopi som reserve.
+async function adminCfgGet(key){
+  if(typeof SB!=="undefined" && SB){
+    try{ const {data}=await SB.from("admin_kv").select("value").eq("key",key).maybeSingle(); if(data&&data.value!=null) return data.value; }catch(e){}
+  }
+  return await DB.getLocal(key);
+}
+async function adminCfgSet(key,val){
+  await DB.setLocal(key,val);
+  if(typeof SB!=="undefined" && SB){ try{ await SB.from("admin_kv").upsert({key,value:val}); }catch(e){} }
+}
 function defaultRemMsg(){
-  return META.phase==="groups"
-    ? "Hei! Velg de to beste lagene i hver pulje i VM-tippen i BK 2026 før fristen. Lenke: [lim inn lenken]. Lykke til!"
-    : "Hei! Det er sluttspillkamp i dag i VM-tippen i BK 2026. Husk å tippe hvem som går videre FØR avspark! Lenke: [lim inn lenken].";
+  return "Hei! Husk VM-tippen i BK FØR avspark i kveld. Lenke: http://vm.bk.no";
 }
 async function renderReminders(){
   const keys=await DB.list("user:"); remData=[];
@@ -949,7 +960,7 @@ async function renderReminders(){
   const missing=remData.filter(x=>!x.done).length;
   $("#remCount").textContent=remData.length?(missing+" mangler"):"";
   if(!$("#remMsg").value.trim()) $("#remMsg").value=defaultRemMsg();
-  const sv=await DB.getLocal("sveve")||{};
+  const sv=await adminCfgGet("sveve")||{};
   $("#svUser").value=sv.user||""; $("#svFrom").value=sv.from||"BK"; $("#svPass").value=sv.passwd||"";
   buildRemLinks();
 }
@@ -971,12 +982,12 @@ async function copyTxt(t){
 $("#remTarget").onchange=buildRemLinks;
 $("#remMsg").oninput=buildRemLinks;
 $("#remCopyNum").onclick=()=>copyTxt(remList().map(x=>cleanNum(x.u.mobile)).join(", "));
-// Sveve-nøkler lagres kun lokalt (denne nettleseren), aldri i den delte databasen
-async function saveSveve(){ await DB.setLocal("sveve",{user:$("#svUser").value.trim(),passwd:$("#svPass").value,from:($("#svFrom").value.trim()||"BK")}); }
+// Sveve-nøkler lagres i databasen (kun arrangøren har tilgang) + lokal kopi
+async function saveSveve(){ await adminCfgSet("sveve",{user:$("#svUser").value.trim(),passwd:$("#svPass").value,from:($("#svFrom").value.trim()||"BK")}); }
 ["svUser","svPass","svFrom"].forEach(id=>$("#"+id).onchange=saveSveve);
 // Send direkte via Sveve fra nettleseren (enkel URL-forespørsel)
 $("#svSend").onclick=async()=>{
-  await saveSveve(); const sv=await DB.getLocal("sveve")||{};
+  await saveSveve(); const sv=await adminCfgGet("sveve")||{};
   if(!sv.user||!sv.passwd){ flash("Fyll inn Sveve brukernavn og passord"); return; }
   const list=remList(); if(!list.length){ flash("Ingen mottakere"); return; }
   if(!confirm("Sende SMS til "+list.length+" mottakere via Sveve nå?")) return;
