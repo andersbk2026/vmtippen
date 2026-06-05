@@ -261,7 +261,8 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 
       <!-- DEL 1 -->
       <div id="phaseGroups">
-        <div class="sec"><h2 style="font-size:16px">Hvilke 2 lag får 1. og 2. plass i gruppen?</h2><span class="note">1 poeng pr. riktige</span></div>
+        <div class="sec"><h2 style="font-size:16px">Hvilke lag får de to øverste plasseringene i hver gruppe?</h2><span class="note">1 poeng pr. riktige</span></div>
+        <div class="banner" style="margin:0 0 14px"><b>Frist:</b> torsdag 11. juni kl. 20.55. Etter dette låses hele del 1.</div>
         <div id="groups"></div>
         <div class="hint" id="grNote" style="text-align:center;margin-top:10px"></div>
         <div class="submit-wrap"><button id="saveGroups" class="btn btn-primary">Lagre del 1</button></div>
@@ -269,7 +270,7 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 
       <!-- DEL 2 -->
       <div id="phaseKnockout" class="hidden">
-        <div class="sec"><h2 style="font-size:17px">Sluttspillet</h2><span class="note">marker hvem som går videre · 1 poeng hver</span></div>
+        <div class="sec"><h2 style="font-size:16px">Hvilket lag vinner kampen?</h2><span class="note">1 poeng pr. riktige</span></div>
         <div id="koInfo"></div>
         <div id="koMatches"></div>
         <div class="hint" id="koSaveNote" style="text-align:center;margin:12px 0 4px">Valgene dine i del 2 lagres automatisk. Husk: en kamp som har startet låses – tipp før avspark!</div>
@@ -380,17 +381,17 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
    ============================================================ */
 const CONFIG = {
   // === Fyll inn fra Supabase (Project Settings -> API) ===
-  SUPABASE_URL: "https://nhneejuumqvrlirqlsor.supabase.co",
-  SUPABASE_ANON_KEY: "sb_publishable_4tn2Nu-CLl0p-VXy_y-yFQ_Qnn3xS3U",
+  SUPABASE_URL: "https://DITT-PROSJEKT.supabase.co",
+  SUPABASE_ANON_KEY: "DIN-ANON-KEY",
 
-  deadlineGroups: new Date("2026-06-11T20:00:00"),  // del 1 (gruppespill) – siste frist. Lokal tid. Juster ved behov.
+  deadlineGroups: new Date("2026-06-11T20:55:00"),  // del 1 (gruppespill) – siste frist torsdag 11. juni kl. 20.55. Lokal tid.
   pTeam: 1,                                          // poeng per riktig lag videre fra gruppe (1./2. plass)
   pAdvance: 1,                                       // poeng for riktig lag videre i sluttspill
   // Premier – juster fritt. (Tallene i meldingen din var litt uklare, så her er et forslag du kan endre.)
   prizes: [
-    {place:"1. plass", prize:"Valgfritt gavekort 3 000 kr"},
-    {place:"2. plass", prize:"Valgfritt gavekort 1 500 kr"},
-    {place:"3. plass", prize:"Valgfritt gavekort 750 kr"}
+    {place:"1. plass", prize:"Valgfritt gavekort 2 000 kr"},
+    {place:"2. plass", prize:"Valgfritt gavekort 1 000 kr"},
+    {place:"3. plass", prize:"Valgfritt gavekort 500 kr"}
   ]
 };
 
