@@ -383,6 +383,7 @@ const CONFIG = {
   // === Fyll inn fra Supabase (Project Settings -> API) ===
   SUPABASE_URL: "https://nhneejuumqvrlirqlsor.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_4tn2Nu-CLl0p-VXy_y-yFQ_Qnn3xS3U",
+  EDGE_FN_URL: "https://DITT-PROSJEKT.supabase.co/functions/v1/results",
 
   deadlineGroups: new Date("2026-06-11T20:55:00"),  // del 1 (gruppespill) – siste frist torsdag 11. juni kl. 20.55. Lokal tid.
   pTeam: 1,                                          // poeng per riktig lag videre fra gruppe (1./2. plass)
@@ -825,7 +826,19 @@ $("#importBtn").onclick=async()=>{
     if(!s.ok||!m.ok){ $("#importNote").textContent="Feil fra football-data ("+s.status+"/"+m.status+")."; return; }
     const sd=await s.json(), md=await m.json();
     d=normWC(sd.standings, md.matches);
-  }catch(e){ $("#importNote").textContent="Kunne ikke hente. Blokkerer nettleseren kallet (CORS), si ifra – da setter vi opp en liten proxy."; return; }
+  }catch(e){
+    if(typeof CONFIG!=="undefined" && CONFIG.EDGE_FN_URL){
+      $("#importNote").textContent="Henter via proxy …";
+      try{
+        const res=await fetch(CONFIG.EDGE_FN_URL,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+CONFIG.SUPABASE_ANON_KEY},body:JSON.stringify({token:tok})});
+        const out=await res.json().catch(()=>({}));
+        if(!res.ok||out.error){ $("#importNote").textContent="Feil fra proxy: "+(out.error||res.status); return; }
+        d=out;  // allerede normalisert {standings, ko}
+      }catch(e2){ $("#importNote").textContent="Kunne ikke hente (verken direkte eller via proxy)."; return; }
+    } else {
+      $("#importNote").textContent="Nettleseren blokkerer kallet (CORS). Deploy proxy-funksjonen «results» (se LESMEG del F)."; return;
+    }
+  }
   let unmapped=[];
     // 1) Gruppefasit = topp 2 i hver gruppe
     const adv={};
