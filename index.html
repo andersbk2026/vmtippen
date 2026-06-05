@@ -207,6 +207,7 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 .hidden{display:none!important}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 </head>
 <body>
 <div class="grain"></div>
@@ -379,12 +380,13 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 /* ============================================================
    KONFIGURASJON
    ============================================================ */
+// Prosjekt-nøkler hentes fra config.js (window.BK_CONFIG) – egen fil som IKKE
+// overskrives når du oppdaterer index.html. I forhåndsvisning er den tom => demo-modus.
+const BKC = (typeof window!=="undefined" && window.BK_CONFIG) ? window.BK_CONFIG : {};
 const CONFIG = {
-  // === Fyll inn fra Supabase (Project Settings -> API) ===
-  SUPABASE_URL: "https://nhneejuumqvrlirqlsor.supabase.co",
-  SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5obmVlanV1bXF2cmxpcnFsc29yIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1ODc1NDksImV4cCI6MjA5NjE2MzU0OX0.k87Ld5AcssAFoMszoCfSUpBkl92GawBjtTtyX_8WyKg",
-  EDGE_FN_URL: "https://nhneejuumqvrlirqlsor.supabase.co/functions/v1/results",
-
+  SUPABASE_URL: BKC.SUPABASE_URL || "",
+  SUPABASE_ANON_KEY: BKC.SUPABASE_ANON_KEY || "",
+  EDGE_FN_URL: BKC.EDGE_FN_URL || "",
   deadlineGroups: new Date("2026-06-11T20:55:00"),  // del 1 (gruppespill) – siste frist torsdag 11. juni kl. 20.55. Lokal tid.
   pTeam: 1,                                          // poeng per riktig lag videre fra gruppe (1./2. plass)
   pAdvance: 1,                                       // poeng for riktig lag videre i sluttspill
@@ -472,6 +474,7 @@ const DB={
   async get(k){ if(SB){ const {data,error}=await SB.from("kv").select("value").eq("key",k).maybeSingle(); if(error)console.error("DB.get",error); return data?data.value:null; } return (_mem[k]!==undefined)?_mem[k]:null; },
   async del(k){ if(SB){ await SB.from("kv").delete().eq("key",k); return; } delete _mem[k]; },
   async list(p){ if(SB){ const {data,error}=await SB.from("kv").select("key").like("key",p+"%"); if(error)console.error("DB.list",error); return data?data.map(r=>r.key):[]; } return Object.keys(_mem).filter(x=>x.startsWith(p)); },
+  async listFull(p){ if(SB){ const {data,error}=await SB.from("kv").select("key,value").like("key",p+"%"); if(error)console.error("DB.listFull",error); return data?data.map(r=>({key:r.key,value:r.value})):[]; } return Object.keys(_mem).filter(x=>x.startsWith(p)).map(k=>({key:k,value:_mem[k]})); },
   async setLocal(k,v){ lset(k,v); },
   async getLocal(k){ return lget(k); }
 };
@@ -524,7 +527,7 @@ async function init(){
   const me=await DB.getLocal("me");           // husk innlogging i nettleseren
   if(me&&me.mobile){ await loginUser(me.name,me.mobile,true); } else { renderTipp(); }
   if(!SB){ const b=document.createElement("div"); b.className="banner warn"; b.style.margin="14px 16px";
-    b.innerHTML="⚠️ Databasen er ikke koblet til. Fyll inn SUPABASE_URL og SUPABASE_ANON_KEY øverst i &lt;script&gt;-koden."; $("#status").after(b); }
+    b.innerHTML="⚠️ Databasen er ikke koblet til. Fyll inn nøklene dine i <b>config.js</b>."; $("#status").after(b); }
 }
 function fillSel(sel){ sel.innerHTML='<option value="">Velg lag…</option>'; ALL.forEach(t=>{const o=document.createElement("option");o.value=t;o.textContent=fl(t)+"  "+t;sel.appendChild(o);}); }
 
@@ -720,12 +723,12 @@ function scoreUser(pick,kopick){
   return {total:g+k,g,k,gh,kh,hasResults:hasG||hasK};
 }
 async function renderTabell(){
-  const keys=await DB.list("user:"); const rows=[];
-  for(const uk of keys){ const u=await DB.get(uk); if(!u)continue;
-    const sl=mid(u.mobile);
-    const pick=await DB.get("pick:"+sl)||{advance:{}};
-    const kopick=await DB.get("kopick:"+sl)||{ko:{}};
-    rows.push({u,s:scoreUser(pick,kopick)});
+  const [users,picks,kopicks]=await Promise.all([DB.listFull("user:"),DB.listFull("pick:"),DB.listFull("kopick:")]);
+  const pickBy={}; picks.forEach(r=>{ pickBy[r.key.replace("pick:","")]=r.value; });
+  const koBy={};   kopicks.forEach(r=>{ koBy[r.key.replace("kopick:","")]=r.value; });
+  const rows=[];
+  for(const r of users){ const u=r.value; if(!u||!u.mobile)continue; const sl=mid(u.mobile);
+    rows.push({u,s:scoreUser(pickBy[sl]||{advance:{}}, koBy[sl]||{ko:{}})});
   }
   $("#lbCount").textContent=rows.length?rows.length+" deltakere":"";
   const any=rows.some(r=>r.s.hasResults);
@@ -926,8 +929,8 @@ $("#saveResG").onclick=async()=>{ RESULTS.advance=JSON.parse(JSON.stringify(admi
 $("#saveResKo").onclick=async()=>{ await DB.set("results",RESULTS); flash("✅ Sluttspill-fasit lagret"); renderAdminKo(); };
 
 async function renderContacts(){
-  const keys=await DB.list("user:"); const host=$("#contacts"); host.innerHTML="";
-  const users=[]; for(const k of keys){ const u=await DB.get(k); if(u)users.push(u); }
+  const host=$("#contacts"); host.innerHTML="";
+  const users=(await DB.listFull("user:")).map(r=>r.value).filter(Boolean);
   users.sort((a,b)=>a.name.localeCompare(b.name));
   $("#contactCount").textContent=users.length?users.length+" stk":"";
   if(!users.length){ host.innerHTML='<div class="contact"><span>Ingen påmeldte ennå.</span></div>'; return; }
@@ -964,13 +967,13 @@ function defaultRemMsg(){
   return "Hei! Husk VM-tippen i BK FØR avspark i kveld. Lenke: http://vm.bk.no";
 }
 async function renderReminders(){
-  const keys=await DB.list("user:"); remData=[];
-  for(const k of keys){ const u=await DB.get(k); if(!u)continue;
-    let done;
-    if(META.phase==="groups"){ const p=await DB.get("pick:"+mid(u.mobile)); done=!!(p&&p.advance&&Object.values(p.advance).some(a=>a.length)); }
-    else { const p=await DB.get("kopick:"+mid(u.mobile)); done=!!(p&&p.ko&&Object.keys(p.ko).length); }
-    remData.push({u,done});
-  }
+  const groups=META.phase==="groups";
+  const [users,picks]=await Promise.all([DB.listFull("user:"),DB.listFull(groups?"pick:":"kopick:")]);
+  const doneBy={};
+  picks.forEach(r=>{ const id=r.key.replace(groups?"pick:":"kopick:",""); const v=r.value;
+    doneBy[id]= groups ? !!(v&&v.advance&&Object.values(v.advance).some(a=>a.length))
+                       : !!(v&&v.ko&&Object.keys(v.ko).length); });
+  remData=users.map(r=>r.value).filter(Boolean).map(u=>({u,done:!!doneBy[mid(u.mobile)]}));
   const missing=remData.filter(x=>!x.done).length;
   $("#remCount").textContent=remData.length?(missing+" mangler"):"";
   if(!$("#remMsg").value.trim()) $("#remMsg").value=defaultRemMsg();
