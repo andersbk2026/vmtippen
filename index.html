@@ -231,6 +231,14 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 .pm-ko{font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
 .pm-rnd{display:inline-block;font-size:11px;font-weight:700;color:var(--muted);min-width:96px}
 .pm-ko .ok{color:var(--green);font-weight:800} .pm-ko .bad{color:var(--danger);font-weight:800}
+.savebar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(56px + env(safe-area-inset-bottom));z-index:25;
+  width:calc(100% - 24px);max-width:520px;display:flex;align-items:center;gap:12px;justify-content:space-between;
+  background:var(--white);border:1px solid var(--line2);border-radius:14px;padding:10px 12px 10px 16px;
+  box-shadow:0 12px 30px rgba(28,30,82,.20)}
+.savebar .sb-note{font-size:12px;color:var(--muted);font-weight:700;line-height:1.25;flex:1}
+.savebar .sb-err{color:var(--danger);font-weight:800}
+.savebar .btn{white-space:nowrap;width:auto;padding:11px 18px;box-shadow:0 8px 20px rgba(53,56,202,.28)}
+#view-tipp{padding-bottom:72px}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -293,7 +301,6 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
         <div id="grCountdown" class="countdown"></div>
         <div id="groups"></div>
         <div class="hint" id="grNote" style="text-align:center;margin-top:10px"></div>
-        <div class="submit-wrap"><button id="saveGroups" class="btn btn-primary">Lagre del 1</button></div>
       </div>
 
       <!-- DEL 2 -->
@@ -302,8 +309,6 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
         <div id="koInfo"></div>
         <div id="koCountdown" class="countdown"></div>
         <div id="koMatches"></div>
-        <div class="hint" id="koSaveNote" style="text-align:center;margin:12px 0 4px"></div>
-        <div class="submit-wrap" id="koSaveWrap"><button id="saveKo" class="btn btn-primary">Lagre del 2</button></div>
       </div>
     </div>
   </section>
@@ -397,6 +402,11 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
     </div>
   </section>
 </main>
+
+<div id="saveBar" class="savebar hidden">
+  <span class="sb-note" id="saveBarNote"></span>
+  <button class="btn btn-primary" id="saveBarBtn">Lagre</button>
+</div>
 
 <nav class="nav"><div class="nav-inner">
   <button data-tab="tipp" class="active"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tipp</button>
@@ -620,7 +630,7 @@ function tog(sel,g,name){ const a=sel[g]; const i=a.indexOf(name);
 
 /* ---- TIPP ---- */
 function renderTipp(){
-  if(!state.user){ $("#reg").classList.remove("hidden"); $("#loggedin").classList.add("hidden"); return; }
+  if(!state.user){ $("#reg").classList.remove("hidden"); $("#loggedin").classList.add("hidden"); $("#saveBar").classList.add("hidden"); return; }
   $("#reg").classList.add("hidden"); $("#loggedin").classList.remove("hidden");
   $("#hello").innerHTML="Hei, <span class='serif'>"+esc(state.user.name.split(" ")[0])+"</span>";
   // Del 2 er alltid synlig – under gruppespillet vises oppsettet, tipping åpner når gruppespillet er ferdig
@@ -659,27 +669,40 @@ function scheduleRetry(kind){ if(_retryT[kind])clearTimeout(_retryT[kind]); _ret
 function renderGroupPicks(){
   const ro=groupsLocked();
   buildGroups($("#groups"),state.advance,(g,n)=>{ if(tog(state.advance,g,n)){ dirtyGroups=true; saveDraftGroups(); scheduleSave("groups"); renderGroupPicks(); } },ro,true);
-  const btn=$("#saveGroups"), note=$("#grNote");
+  const note=$("#grNote");
   const tot=Object.values(state.advance).reduce((a,b)=>a+b.length,0);
-  if(ro){ btn.disabled=true; btn.textContent=META.phase!=="groups"?"Del 1 er låst":"Fristen er passert";
+  if(ro){
     const fz=RESULTS.advance||{}; const hasF=Object.values(fz).some(a=>a&&a.length);
     if(hasF){ let hit=0; Object.keys(GROUPS).forEach(g=>{ const f=fz[g]||[]; hit+=(state.advance[g]||[]).filter(p=>f.includes(p)).length; });
       note.textContent="Du fikk "+hit+" av 24 riktig i gruppespillet. ★ = riktig svar."; }
     else note.textContent = tot?("Du valgte "+tot+"/24."):"";
-    return; }
-  refreshGroupSave();
+  } else {
+    note.textContent = tot>=24 ? "Alle 24 valgt – du kan endre fritt frem til fristen." : "Velg de to øverste i hver gruppe ("+tot+"/24).";
+  }
+  updateSaveBar();
 }
-function refreshGroupSave(){
-  const btn=$("#saveGroups"), note=$("#grNote");
-  const tot=Object.values(state.advance).reduce((a,b)=>a+b.length,0);
-  if(saveErr.groups){ btn.disabled=false; btn.textContent="Prøv å lagre igjen"; note.innerHTML='<span style="color:var(--danger);font-weight:700">⚠️ Kunne ikke lagre – prøver automatisk igjen …</span>'; return; }
-  if(saving.groups){ btn.disabled=true; btn.textContent="Lagrer …"; note.textContent="Lagrer …"; return; }
-  if(dirtyGroups){ btn.disabled=false; btn.textContent="Lagre del 1 nå";
-    note.textContent="Lagres automatisk – eller trykk «Lagre del 1 nå»."+(tot<24?(" ("+tot+"/24 valgt)"):""); }
-  else { btn.disabled=true; btn.textContent="Lagret ✓";
-    note.textContent = tot>=24 ? "Lagret ✓ Du kan endre frem til fristen." : "Lagret ✓ ("+tot+"/24 valgt) – fyll gjerne inn resten før fristen."; }
+function refreshGroupSave(){ updateSaveBar(); }
+// Felles fast lagre-linje nederst – gjelder den aktive delen (1 eller 2)
+function updateSaveBar(){
+  const bar=$("#saveBar"), btn=$("#saveBarBtn"), note=$("#saveBarNote");
+  if(!state.user){ bar.classList.add("hidden"); return; }
+  if(state.pv==="groups"){
+    if(groupsLocked()){ bar.classList.add("hidden"); return; }
+    const tot=Object.values(state.advance).reduce((a,b)=>a+b.length,0);
+    bar.classList.remove("hidden"); btn.onclick=()=>commitSave("groups",false);
+    if(saveErr.groups){ btn.disabled=false; btn.textContent="Prøv igjen"; note.innerHTML='<span class="sb-err">⚠️ Kunne ikke lagre – prøver igjen …</span>'; }
+    else if(saving.groups){ btn.disabled=true; btn.textContent="Lagrer …"; note.textContent="Lagrer …"; }
+    else if(dirtyGroups){ btn.disabled=false; btn.textContent="Lagre del 1"; note.textContent="Ulagrede endringer"+(tot<24?" · "+tot+"/24 valgt":""); }
+    else { btn.disabled=true; btn.textContent="Lagret ✓"; note.textContent= tot>=24?"Alt lagret ✓":("Lagret ✓ · "+tot+"/24 valgt"); }
+  } else {
+    if(META.phase!=="knockout" || !META.ko.some(m=>teamsSet(m)&&!started(m)&&!koResolved(RESULTS.ko[m.id]))){ bar.classList.add("hidden"); return; }
+    bar.classList.remove("hidden"); btn.onclick=()=>commitSave("ko",false);
+    if(saveErr.ko){ btn.disabled=false; btn.textContent="Prøv igjen"; note.innerHTML='<span class="sb-err">⚠️ Kunne ikke lagre – prøver igjen …</span>'; }
+    else if(saving.ko){ btn.disabled=true; btn.textContent="Lagrer …"; note.textContent="Lagrer …"; }
+    else if(dirtyKo){ btn.disabled=false; btn.textContent="Lagre del 2"; note.textContent="Ulagrede endringer"; }
+    else { btn.disabled=true; btn.textContent="Lagret ✓"; note.textContent="Alt lagret ✓ · låses ved avspark"; }
+  }
 }
-$("#saveGroups").onclick=()=>commitSave("groups",false);
 
 function koCard(m){
   const ready=teamsSet(m); const mine=state.ko[m.id]||{}; const res=RESULTS.ko[m.id];
@@ -734,26 +757,16 @@ async function renderKoPicks(){
     host.insertAdjacentHTML("beforeend",'<div class="hint" style="text-align:center;margin:6px 0">Ingen kommende kamper akkurat nå.</div>');
   refreshKoSave();
 }
-function refreshKoSave(){
-  const wrap=$("#koSaveWrap"), btn=$("#saveKo"), note=$("#koSaveNote"); if(!wrap)return;
-  const tippable = META.phase==="knockout" && META.ko.some(m=>teamsSet(m)&&!started(m)&&!koResolved(RESULTS.ko[m.id]));
-  if(!tippable){ wrap.classList.add("hidden"); note.textContent=""; return; }
-  wrap.classList.remove("hidden");
-  if(saveErr.ko){ btn.disabled=false; btn.textContent="Prøv å lagre igjen"; note.innerHTML='<span style="color:var(--danger);font-weight:700">⚠️ Kunne ikke lagre – prøver automatisk igjen …</span>'; return; }
-  if(saving.ko){ btn.disabled=true; btn.textContent="Lagrer …"; note.textContent="Lagrer …"; return; }
-  if(dirtyKo){ btn.disabled=false; btn.textContent="Lagre del 2 nå"; note.textContent="Lagres automatisk – eller trykk «Lagre del 2 nå»."; }
-  else { btn.disabled=true; btn.textContent="Lagret ✓"; note.textContent="Lagret ✓ Du kan endre frem til avspark – hver kamp låses når den starter."; }
-}
+function refreshKoSave(){ updateSaveBar(); }
 function saveDraftKo(){ if(state.user) DB.setLocal("draftKo:"+mid(state.user.mobile),{ko:state.ko,dirty:dirtyKo,ts:Date.now()}); }
 function bindKo(card,m){
   card.querySelectorAll('.koteam[data-adv]').forEach(b=>b.onclick=()=>{
     if(started(m)||META.phase!=="knockout"||koResolved(RESULTS.ko[m.id]))return;
     const s=state.ko[m.id]=state.ko[m.id]||{}; s.adv=b.dataset.adv;
     card.querySelectorAll('.koteam').forEach(x=>x.classList.toggle("on",x.dataset.adv===s.adv));
-    dirtyKo=true; saveDraftKo(); scheduleSave("ko"); refreshKoSave();   // i minnet + lokal kladd + autolagring til database
+    dirtyKo=true; saveDraftKo(); scheduleSave("ko"); updateSaveBar();   // i minnet + lokal kladd + autolagring til database
   });
 }
-$("#saveKo").onclick=()=>commitSave("ko",false);
 
 /* ---- innlogging / registrering (mobil = unik ID) ---- */
 function numOnly(e){ e.target.value=e.target.value.replace(/\D/g,"").slice(0,8); }
@@ -1092,6 +1105,7 @@ async function renderContacts(){
 function switchTab(t){
   ["tipp","tabell","admin"].forEach(x=>$("#view-"+x).classList.toggle("hidden",x!==t));
   document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
+  if(t!=="tipp") $("#saveBar").classList.add("hidden");
   if(t==="tabell") renderTabell();
   if(t==="tipp") renderTipp();
 }
