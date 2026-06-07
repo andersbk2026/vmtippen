@@ -248,7 +248,7 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 .bq{padding:8px 0;border-top:1px solid var(--line)}
 .bqt{font-weight:600;font-size:14px;margin-bottom:6px}
 .bopts{display:flex;gap:8px}
-.bopt{flex:1;padding:9px 4px;border-radius:10px;border:1.5px solid var(--line2);background:var(--cream);font:700 14px 'Inter';color:var(--ink);cursor:pointer}
+.bopt{flex:1;min-width:0;padding:9px 4px;border-radius:10px;border:1.5px solid var(--line2);background:var(--cream);font:700 14px 'Inter';color:var(--ink);cursor:pointer}
 .bopt.on{background:var(--blue);border-color:var(--blue);color:#fff}
 .bopt.no.on{background:var(--danger);border-color:var(--danger)}
 .bopt:disabled{opacity:.55;cursor:default}
@@ -706,7 +706,7 @@ async function commitSave(kind,auto){
     saving.groups=false;
     if(ok){ dirtyGroups=false; saveErr.groups=false; saveDraftGroups(); refreshGroupSave(); if(!auto) flash("✅ Del 1 lagret!"); }
     else { saveErr.groups=true; refreshGroupSave(); scheduleRetry("groups"); }
-  } else {
+  } else if(kind==="ko") {
     if(META.phase!=="knockout") return;
     saving.ko=true; saveErr.ko=false; refreshKoSave();
     let ok=false; try{ ok=await DB.set("kopick:"+id,{ko:state.ko,ts:Date.now()}); }catch(e){ ok=false; }
