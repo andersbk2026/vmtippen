@@ -207,6 +207,30 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
   font-weight:700;padding:13px 22px;border-radius:999px;box-shadow:0 10px 28px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:.26s;z-index:50;font-size:15px;text-align:center;max-width:90vw}
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .hidden{display:none!important}
+.countdown{text-align:center;font-weight:800;color:var(--blue);font-size:13px;letter-spacing:.2px;margin:0 0 12px;min-height:1px}
+.distline{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);font-size:12px;font-weight:700;color:var(--ink)}
+.distline .muted{color:var(--muted);font-weight:600}
+.row.clk{cursor:pointer}
+.row.clk:active{transform:scale(.995)}
+.flashrow{animation:flashrow 1.3s ease}
+@keyframes flashrow{0%,100%{background:transparent}30%{background:var(--mint)}}
+.lbme{position:sticky;top:8px;z-index:8;display:flex;align-items:center;justify-content:space-between;gap:10px;
+  background:var(--blue);color:#fff;border-radius:14px;padding:10px 14px;margin:0 0 12px;box-shadow:0 8px 22px rgba(53,56,202,.28)}
+.lbme-txt{font-size:14px;font-weight:600} .lbme-txt b{font-weight:800}
+.lbme .btn{background:rgba(255,255,255,.18);color:#fff;border:none}
+.modal{position:fixed;inset:0;background:rgba(28,30,82,.55);backdrop-filter:blur(3px);z-index:60;display:flex;align-items:flex-end;justify-content:center;padding:0}
+.modal-card{background:var(--cream);width:100%;max-width:560px;max-height:86vh;overflow:auto;border-radius:20px 20px 0 0;padding:22px 18px 30px;position:relative;box-shadow:0 -10px 40px rgba(0,0,0,.3)}
+@media(min-width:600px){.modal{align-items:center}.modal-card{border-radius:20px}}
+.modal-x{position:absolute;top:12px;right:14px;border:none;background:var(--line);color:var(--ink);width:34px;height:34px;border-radius:50%;font-size:20px;line-height:1;cursor:pointer;font-weight:700}
+.pm-title{font-size:20px;font-weight:800;margin:2px 36px 14px 2px}
+.pm-sec{font-weight:800;color:var(--blue);margin:16px 0 8px;font-size:13px;text-transform:uppercase;letter-spacing:.4px}
+.pm-groups{display:flex;flex-direction:column;gap:6px}
+.pm-g{font-size:14px} .pm-gl{display:inline-block;min-width:20px;font-weight:800;color:var(--muted)}
+.pm-pk{display:inline-block;background:var(--white);border:1px solid var(--line);border-radius:8px;padding:2px 8px;margin:2px 2px;font-weight:600}
+.pm-pk.ok{background:var(--mint);border-color:var(--green);color:var(--green);font-weight:700}
+.pm-ko{font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
+.pm-rnd{display:inline-block;font-size:11px;font-weight:700;color:var(--muted);min-width:96px}
+.pm-ko .ok{color:var(--green);font-weight:800} .pm-ko .bad{color:var(--danger);font-weight:800}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -265,7 +289,8 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
       <!-- DEL 1 -->
       <div id="phaseGroups">
         <div class="sec"><h2 style="font-size:16px">Hvilke lag får de to øverste plasseringene i hver gruppe?</h2><span class="note">1 poeng pr. riktige</span></div>
-        <div class="banner" style="margin:0 0 14px"><b>Frist:</b> torsdag 11. juni kl. 20.55. Etter dette låses hele del 1.</div>
+        <div class="banner" style="margin:0 0 8px"><b>Frist:</b> torsdag 11. juni kl. 20.55. Etter dette låses hele del 1.</div>
+        <div id="grCountdown" class="countdown"></div>
         <div id="groups"></div>
         <div class="hint" id="grNote" style="text-align:center;margin-top:10px"></div>
         <div class="submit-wrap"><button id="saveGroups" class="btn btn-primary">Lagre del 1</button></div>
@@ -275,6 +300,7 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
       <div id="phaseKnockout" class="hidden">
         <div class="sec"><h2 style="font-size:16px">Hvilket lag vinner kampen?</h2><span class="note">1 poeng pr. riktige</span></div>
         <div id="koInfo"></div>
+        <div id="koCountdown" class="countdown"></div>
         <div id="koMatches"></div>
         <div class="hint" id="koSaveNote" style="text-align:center;margin:12px 0 4px"></div>
         <div class="submit-wrap" id="koSaveWrap"><button id="saveKo" class="btn btn-primary">Lagre del 2</button></div>
@@ -287,6 +313,7 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
     <div class="sec"><h2>Topp<span class="serif">tabell</span></h2><span class="note" id="lbCount"></span></div>
     <div class="prizes" id="prizes"></div>
     <div id="lbStatus"></div>
+    <div id="lbMe" class="lbme hidden"></div>
     <div id="leaderboard"></div>
   </section>
 
@@ -378,6 +405,13 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 </div></nav>
 
 <div id="toast" class="toast"></div>
+
+<div id="pickModal" class="modal hidden">
+  <div class="modal-card">
+    <button class="modal-x" id="pickClose" aria-label="Lukk">×</button>
+    <div id="pmBody"></div>
+  </div>
+</div>
 
 <script>
 /* ============================================================
@@ -473,7 +507,7 @@ const _mem={};
 function lset(k,v){ try{ localStorage.setItem("bk:"+k, JSON.stringify(v)); }catch(e){ _mem["L:"+k]=v; } }
 function lget(k){ try{ const s=localStorage.getItem("bk:"+k); return s?JSON.parse(s):null; }catch(e){ return (_mem["L:"+k]!==undefined)?_mem["L:"+k]:null; } }
 const DB={
-  async set(k,v){ if(SB){ const {error}=await SB.from("kv").upsert({key:k,value:v}); if(error)console.error("DB.set",error); return; } _mem[k]=v; },
+  async set(k,v){ if(SB){ try{ const {error}=await SB.from("kv").upsert({key:k,value:v}); if(error)throw error; return true; }catch(e){ console.error("DB.set",e); return false; } } _mem[k]=v; return true; },
   async get(k){ if(SB){ const {data,error}=await SB.from("kv").select("value").eq("key",k).maybeSingle(); if(error)console.error("DB.get",error); return data?data.value:null; } return (_mem[k]!==undefined)?_mem[k]:null; },
   async del(k){ if(SB){ await SB.from("kv").delete().eq("key",k); return; } delete _mem[k]; },
   async list(p){ if(SB){ const {data,error}=await SB.from("kv").select("key").like("key",p+"%"); if(error)console.error("DB.list",error); return data?data.map(r=>r.key):[]; } return Object.keys(_mem).filter(x=>x.startsWith(p)); },
@@ -496,7 +530,11 @@ const adminG=Object.fromEntries(Object.keys(GROUPS).map(g=>[g,[]]));
 let dirtyGroups=false;  // ulagrede endringer i del 1
 let dirtyKo=false;      // ulagrede endringer i del 2
 const saving={groups:false,ko:false};   // pågående lagring til database
+const saveErr={groups:false,ko:false};   // siste lagring feilet
 const _saveT={};        // tidtakere for autolagring (debounce)
+const _retryT={};       // tidtakere for nytt forsøk ved feil
+let _allCache=null;     // mellomlager: alle deltakere + tips (kort levetid)
+let koDist={};          // fordeling pr. sluttspillkamp (etter avspark)
 const emptyAdvance=()=>Object.fromEntries(Object.keys(GROUPS).map(g=>[g,[]]));
 
 const groupsLocked=()=>META.phase!=="groups"||Date.now()>CONFIG.deadlineGroups.getTime();
@@ -592,6 +630,7 @@ function renderTipp(){
   $("#phaseGroups").classList.toggle("hidden",state.pv!=="groups");
   $("#phaseKnockout").classList.toggle("hidden",state.pv!=="knockout");
   if(state.pv==="groups") renderGroupPicks(); else renderKoPicks();
+  tickCountdowns();
 }
 function saveDraftGroups(){ if(state.user) DB.setLocal("draftG:"+mid(state.user.mobile),{advance:state.advance,dirty:dirtyGroups,ts:Date.now()}); }
 // Autolagring til database (debounce ~1,1 s) + umiddelbar lagring via knapp
@@ -602,18 +641,21 @@ async function commitSave(kind,auto){
   const id=mid(state.user.mobile);
   if(kind==="groups"){
     if(groupsLocked()) return;
-    saving.groups=true; refreshGroupSave();
-    await DB.set("pick:"+id,{advance:state.advance,ts:Date.now()});
-    dirtyGroups=false; saving.groups=false; saveDraftGroups(); refreshGroupSave();
-    if(!auto) flash("✅ Del 1 lagret!");
+    saving.groups=true; saveErr.groups=false; refreshGroupSave();
+    let ok=false; try{ ok=await DB.set("pick:"+id,{advance:state.advance,ts:Date.now()}); }catch(e){ ok=false; }
+    saving.groups=false;
+    if(ok){ dirtyGroups=false; saveErr.groups=false; saveDraftGroups(); refreshGroupSave(); if(!auto) flash("✅ Del 1 lagret!"); }
+    else { saveErr.groups=true; refreshGroupSave(); scheduleRetry("groups"); }
   } else {
     if(META.phase!=="knockout") return;
-    saving.ko=true; refreshKoSave();
-    await DB.set("kopick:"+id,{ko:state.ko,ts:Date.now()});
-    dirtyKo=false; saving.ko=false; saveDraftKo(); refreshKoSave();
-    if(!auto) flash("✅ Del 2 lagret!");
+    saving.ko=true; saveErr.ko=false; refreshKoSave();
+    let ok=false; try{ ok=await DB.set("kopick:"+id,{ko:state.ko,ts:Date.now()}); }catch(e){ ok=false; }
+    saving.ko=false;
+    if(ok){ dirtyKo=false; saveErr.ko=false; saveDraftKo(); refreshKoSave(); if(!auto) flash("✅ Del 2 lagret!"); }
+    else { saveErr.ko=true; refreshKoSave(); scheduleRetry("ko"); }
   }
 }
+function scheduleRetry(kind){ if(_retryT[kind])clearTimeout(_retryT[kind]); _retryT[kind]=setTimeout(()=>{ _retryT[kind]=null; commitSave(kind,true); },4000); }
 function renderGroupPicks(){
   const ro=groupsLocked();
   buildGroups($("#groups"),state.advance,(g,n)=>{ if(tog(state.advance,g,n)){ dirtyGroups=true; saveDraftGroups(); scheduleSave("groups"); renderGroupPicks(); } },ro,true);
@@ -630,6 +672,7 @@ function renderGroupPicks(){
 function refreshGroupSave(){
   const btn=$("#saveGroups"), note=$("#grNote");
   const tot=Object.values(state.advance).reduce((a,b)=>a+b.length,0);
+  if(saveErr.groups){ btn.disabled=false; btn.textContent="Prøv å lagre igjen"; note.innerHTML='<span style="color:var(--danger);font-weight:700">⚠️ Kunne ikke lagre – prøver automatisk igjen …</span>'; return; }
   if(saving.groups){ btn.disabled=true; btn.textContent="Lagrer …"; note.textContent="Lagrer …"; return; }
   if(dirtyGroups){ btn.disabled=false; btn.textContent="Lagre del 1 nå";
     note.textContent="Lagres automatisk – eller trykk «Lagre del 1 nå»."+(tot<24?(" ("+tot+"/24 valgt)"):""); }
@@ -658,11 +701,17 @@ function koCard(m){
     else if(matchStart(m)) foot='<div class="startline">⏱ Stenger ved avspark · '+fmtStart(m)+'</div>';
   }
   d.innerHTML=head+body+foot;
+  if(ready && (started(m)||koResolved(res))){
+    const dd=koDist[m.id]||{}; const total=Object.values(dd).reduce((a,b)=>a+b,0);
+    if(total){ const aC=dd[m.a]||0,bC=dd[m.b]||0; const pa=Math.round(aC/total*100), pb=Math.round(bC/total*100);
+      d.insertAdjacentHTML("beforeend",'<div class="distline">📊 '+pa+'% '+esc(m.a)+' · '+pb+'% '+esc(m.b)+' <span class="muted">('+total+' tips)</span></div>'); }
+  }
   if(tippable) bindKo(d,m);
   return d;
 }
-function renderKoPicks(){
+async function renderKoPicks(){
   const host=$("#koMatches"); host.innerHTML="";
+  try{ koDist=computeKoDist((await loadAllPicks()).koBy); }catch(e){ koDist={}; }
   $("#koInfo").innerHTML = (META.phase==="knockout")
     ? '<div class="banner">Sluttspillet er åpent – marker hvem du tror går videre. Neste kamp ligger øverst. Valgene lagres automatisk, og du kan også trykke «Lagre del 2 nå». Hver kamp stenger ved avspark.</div>'
     : '<div class="banner">Del 2 åpner for tipping når gruppespillet er ferdig. Lagene fylles inn da – her ser du allerede oppsettet og avspark for alle sluttspillkampene.</div>';
@@ -690,6 +739,7 @@ function refreshKoSave(){
   const tippable = META.phase==="knockout" && META.ko.some(m=>teamsSet(m)&&!started(m)&&!koResolved(RESULTS.ko[m.id]));
   if(!tippable){ wrap.classList.add("hidden"); note.textContent=""; return; }
   wrap.classList.remove("hidden");
+  if(saveErr.ko){ btn.disabled=false; btn.textContent="Prøv å lagre igjen"; note.innerHTML='<span style="color:var(--danger);font-weight:700">⚠️ Kunne ikke lagre – prøver automatisk igjen …</span>'; return; }
   if(saving.ko){ btn.disabled=true; btn.textContent="Lagrer …"; note.textContent="Lagrer …"; return; }
   if(dirtyKo){ btn.disabled=false; btn.textContent="Lagre del 2 nå"; note.textContent="Lagres automatisk – eller trykk «Lagre del 2 nå»."; }
   else { btn.disabled=true; btn.textContent="Lagret ✓"; note.textContent="Lagret ✓ Du kan endre frem til avspark – hver kamp låses når den starter."; }
@@ -762,32 +812,90 @@ function scoreUser(pick,kopick){
   const hasK=Object.values(RESULTS.ko||{}).some(koResolved);
   return {total:g+k,g,k,gh,kh,hasResults:hasG||hasK};
 }
-async function renderTabell(){
+async function loadAllPicks(force){
+  if(!force && _allCache && Date.now()-_allCache.ts<15000) return _allCache;
   const [users,picks,kopicks]=await Promise.all([DB.listFull("user:"),DB.listFull("pick:"),DB.listFull("kopick:")]);
-  const pickBy={}; picks.forEach(r=>{ pickBy[r.key.replace("pick:","")]=r.value; });
-  const koBy={};   kopicks.forEach(r=>{ koBy[r.key.replace("kopick:","")]=r.value; });
+  const pickBy={},koBy={};
+  picks.forEach(r=>{ pickBy[r.key.replace("pick:","")]=r.value; });
+  kopicks.forEach(r=>{ koBy[r.key.replace("kopick:","")]=r.value; });
+  _allCache={users:users.map(r=>r.value).filter(Boolean),pickBy,koBy,ts:Date.now()};
+  return _allCache;
+}
+function computeKoDist(koBy){
+  const dist={};
+  Object.values(koBy||{}).forEach(v=>{ const ko=(v&&v.ko)||{};
+    Object.keys(ko).forEach(id=>{ const adv=ko[id]&&ko[id].adv; if(!adv)return; (dist[id]=dist[id]||{})[adv]=(dist[id][adv]||0)+1; }); });
+  return dist;
+}
+function fmtLeft(ms){ const s=Math.max(0,Math.floor(ms/1000)); const d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60),se=s%60;
+  if(d>0)return d+"d "+h+"t"; if(h>0)return h+"t "+m+"m"; if(m>0)return m+"m "+se+"s"; return se+"s"; }
+function tickCountdowns(){
+  const g=document.getElementById("grCountdown");
+  if(g){ const left=CONFIG.deadlineGroups.getTime()-Date.now();
+    g.textContent=(META.phase==="groups"&&left>0)?("⏳ Stenger om "+fmtLeft(left)):""; }
+  const k=document.getElementById("koCountdown");
+  if(k){ let txt="";
+    if(META.phase==="knockout"){ const now=Date.now();
+      const nxt=META.ko.filter(m=>teamsSet(m)&&!started(m)&&!koResolved(RESULTS.ko[m.id])&&matchStart(m))
+        .sort((x,y)=>matchStart(x)-matchStart(y))[0];
+      if(nxt) txt="⏳ Neste kamp ("+nxt.a+"–"+nxt.b+") låses om "+fmtLeft(matchStart(nxt).getTime()-now); }
+    k.textContent=txt; }
+}
+setInterval(tickCountdowns,1000);
+// Se en deltakers tips – kun det som allerede er låst (ingen kan kopiere før avspark)
+function openPicks(name,pick,kopick){
+  const adv=(pick&&pick.advance)||{}, ko=(kopick&&kopick.ko)||{};
+  let html='<div class="pm-title">'+esc(name)+'</div><div class="pm-sec">Gruppespill</div>';
+  if(groupsLocked()){
+    const fz=RESULTS.advance||{}; const hasF=Object.values(fz).some(a=>a&&a.length);
+    html+='<div class="pm-groups">';
+    Object.keys(GROUPS).forEach(g=>{ const ps=adv[g]||[];
+      html+='<div class="pm-g"><span class="pm-gl">'+g+'</span> '+(ps.length?ps.map(t=>{ const ok=hasF&&(fz[g]||[]).includes(t); return '<span class="pm-pk'+(ok?' ok':'')+'">'+fl(t)+' '+esc(t)+(ok?' ★':'')+'</span>'; }).join(" "):'<span class="muted">–</span>')+'</div>'; });
+    html+='</div>';
+  } else html+='<div class="muted">Vises etter fristen (11. juni kl. 20.55), så ingen kan kopiere før låsing.</div>';
+  const shown=META.ko.filter(m=>teamsSet(m)&&(started(m)||koResolved(RESULTS.ko[m.id])))
+    .sort((x,y)=>(matchStart(x)?.getTime()||0)-(matchStart(y)?.getTime()||0));
+  if(shown.length){
+    html+='<div class="pm-sec">Sluttspill</div>';
+    shown.forEach(m=>{ const mine=ko[m.id]&&ko[m.id].adv; const res=RESULTS.ko[m.id]; const rz=koResolved(res); const ok=rz&&mine&&mine===res.adv;
+      html+='<div class="pm-ko"><span class="pm-rnd">'+esc(m.round)+'</span> '+esc(m.a)+'–'+esc(m.b)+' → <b>'+(mine?(fl(mine)+" "+esc(mine)):"(ikke tippet)")+'</b>'+(rz?(ok?' <span class="ok">✓</span>':' <span class="bad">✗</span>'):'')+'</div>'; });
+  }
+  $("#pmBody").innerHTML=html; $("#pickModal").classList.remove("hidden");
+}
+async function renderTabell(){
+  const all=await loadAllPicks(true); const {pickBy,koBy}=all;
   const rows=[];
-  for(const r of users){ const u=r.value; if(!u||!u.mobile)continue; const sl=mid(u.mobile);
+  for(const u of all.users){ if(!u||!u.mobile)continue; const sl=mid(u.mobile);
     const pk=pickBy[sl]||{advance:{}};
     const gtot=pk.advance?Object.values(pk.advance).reduce((a,b)=>a+(b?b.length:0),0):0;
-    rows.push({u,s:scoreUser(pk, koBy[sl]||{ko:{}}), del1done:gtot>=24});
+    rows.push({u,s:scoreUser(pk, koBy[sl]||{ko:{}}), del1done:gtot>=24, pick:pk, kopick:koBy[sl]||{ko:{}}});
   }
   $("#lbCount").textContent=rows.length?rows.length+" deltakere":"";
   const any=rows.some(r=>r.s.hasResults);
   $("#lbStatus").innerHTML=any?"":'<div class="banner">Resultater ikke lagt inn ennå – tabellen viser hvem som er med.</div>';
-  if(!rows.length){ $("#leaderboard").innerHTML='<div class="empty"><div class="big">Ingen deltakere ennå</div>Gå til <b>Tipp</b> og bli den første.</div>'; return; }
+  if(!rows.length){ $("#leaderboard").innerHTML='<div class="empty"><div class="big">Ingen deltakere ennå</div>Gå til <b>Tipp</b> og bli den første.</div>'; $("#lbMe").classList.add("hidden"); return; }
   rows.sort((a,b)=> any?(b.s.total-a.s.total||a.u.name.localeCompare(b.u.name)) : a.u.name.localeCompare(b.u.name));
   const me=state.user?mid(state.user.mobile):"";
   const lb=$("#leaderboard"); lb.innerHTML="";
+  let myIdx=-1;
   rows.forEach((r,i)=>{
-    const mine=me&&mid(r.u.mobile)===me;
-    const row=document.createElement("div"); row.className="row"+(any&&i<3?" p"+(i+1):"")+(mine?" you":"");
+    const mine=me&&mid(r.u.mobile)===me; if(mine)myIdx=i;
+    const row=document.createElement("div"); row.className="row clk"+(any&&i<3?" p"+(i+1):"")+(mine?" you":"");
     const d = any ? (r.s.g+"p gruppe · "+r.s.k+"p sluttspill") : (r.del1done?"klar til kamp":"gjør analyser");
     row.innerHTML='<div class="pos">'+(any?(i+1):"•")+'</div>'+
-      '<div class="who"><div class="n">'+esc(r.u.name)+(mine?'<span class="badge">DEG</span>':'')+'</div><div class="d">'+d+'</div></div>'+
+      '<div class="who"><div class="n">'+esc(r.u.name)+(mine?'<span class="badge">DEG</span>':'')+'</div><div class="d">'+d+' ›</div></div>'+
       (any?'<div class="pts">'+r.s.total+'<small>POENG</small></div>':'<div class="pts" style="font-size:14px;color:var(--muted)">Med ✓</div>');
+    row.onclick=()=>openPicks(r.u.name,r.pick,r.kopick);
     lb.appendChild(row);
   });
+  // Din plassering + hopp-til-meg
+  const meBox=$("#lbMe");
+  if(myIdx>=0){
+    const r=rows[myIdx];
+    meBox.classList.remove("hidden");
+    meBox.innerHTML='<div class="lbme-txt">'+(any?("Du er <b>#"+(myIdx+1)+"</b> av "+rows.length+" · "+r.s.total+" poeng"):("Du er med · "+rows.length+" deltakere"))+'</div><button class="btn btn-ghost btn-sm" id="lbMeBtn">Vis meg</button>';
+    $("#lbMeBtn").onclick=()=>{ const el=lb.querySelector(".row.you"); if(el){ el.scrollIntoView({behavior:"smooth",block:"center"}); el.classList.add("flashrow"); setTimeout(()=>el.classList.remove("flashrow"),1400); } };
+  } else meBox.classList.add("hidden");
 }
 
 /* ---- ARRANGØR ---- */
@@ -1062,6 +1170,8 @@ $("#svSend").onclick=async()=>{
 
 /* ---- hjelpere ---- */
 let tT; function flash(m){ const t=$("#toast"); t.textContent=m; t.classList.add("show"); clearTimeout(tT); tT=setTimeout(()=>t.classList.remove("show"),1900); }
+$("#pickClose").onclick=()=>$("#pickModal").classList.add("hidden");
+$("#pickModal").onclick=e=>{ if(e.target.id==="pickModal") $("#pickModal").classList.add("hidden"); };
 function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
 init();
