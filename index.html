@@ -239,6 +239,21 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 .savebar .sb-err{color:var(--danger);font-weight:800}
 .savebar .btn{white-space:nowrap;width:auto;padding:11px 18px;box-shadow:0 8px 20px rgba(53,56,202,.28)}
 #view-tipp{padding-bottom:72px}
+.navflag{font-size:20px;line-height:22px;height:22px}
+#view-bonus{padding-bottom:72px}
+.bcard{background:var(--white);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 2px 10px rgba(28,30,82,.05)}
+.bcard.locked{opacity:.92}
+.bhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:8px}
+.bttl{font-weight:800;font-size:15px} .btime{font-size:11px;color:var(--muted);font-weight:700;white-space:nowrap}
+.bq{padding:8px 0;border-top:1px solid var(--line)}
+.bqt{font-weight:600;font-size:14px;margin-bottom:6px}
+.bopts{display:flex;gap:8px}
+.bopt{flex:1;padding:9px 4px;border-radius:10px;border:1.5px solid var(--line2);background:var(--cream);font:700 14px 'Inter';color:var(--ink);cursor:pointer}
+.bopt.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.bopt.no.on{background:var(--danger);border-color:var(--danger)}
+.bopt:disabled{opacity:.55;cursor:default}
+.bres{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:var(--muted)}
+.bres.ok{color:var(--green)} .bres.bad{color:var(--danger)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -313,6 +328,14 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
     </div>
   </section>
 
+  <!-- ===== BONUS ===== -->
+  <section id="view-bonus" class="hidden">
+    <div class="sec"><h2>🇳🇴 Bonus<span class="serif">spill</span></h2><span class="note">1 poeng pr. riktige</span></div>
+    <div class="banner" style="margin:0 0 12px">Tippe på Norges gruppekamper – ja eller nei. Hvert spill stenger ved avspark. Lagres automatisk, og du kan lagre nederst.</div>
+    <div id="bonusLogin" class="hidden"><div class="empty"><div class="big">Logg inn for å spille</div>Gå til <b>Tipp</b> og logg inn med mobilnummeret ditt.</div></div>
+    <div id="bonusList"></div>
+  </section>
+
   <!-- ===== TABELL ===== -->
   <section id="view-tabell" class="hidden">
     <div class="sec"><h2>Topp<span class="serif">tabell</span></h2><span class="note" id="lbCount"></span></div>
@@ -380,6 +403,11 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
       <div id="adminKo"></div>
       <button id="saveResKo" class="btn btn-green btn-sm" style="margin-top:4px">Lagre sluttspill-fasit</button>
 
+      <div class="sec"><h2 style="font-size:16px">🇳🇴 Fasit bonus</h2><span class="note">Ja / Nei pr. spørsmål</span></div>
+      <div class="hint" style="margin:0 0 10px">Mål- og assist-spørsmål må settes manuelt (football-data.org sitt gratis-API har ikke målscorer/assist). «Begge scorer», «Norge tar poeng» og «Norge holder nullen» fylles automatisk fra kampresultatet ved import.</div>
+      <div id="adminBonus"></div>
+      <button id="saveResBonus" class="btn btn-green btn-sm" style="margin-top:4px">Lagre bonus-fasit</button>
+
       <div class="sec"><h2 style="font-size:16px">SMS-påminnelser</h2><span class="note" id="remCount"></span></div>
       <div class="card" style="padding:16px">
         <div class="hint" style="margin:0 0 12px"><b>Sveve brukernavn og passord</b> lagres kun i din egen nettleser (ikke i databasen). «Send» går direkte til Sveve. Hvis nettleseren blokkerer det, bruk «Åpne Meldinger» eller «Kopiér numre».</div>
@@ -410,6 +438,7 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 
 <nav class="nav"><div class="nav-inner">
   <button data-tab="tipp" class="active"><svg viewBox="0 0 24 24"><path d="M9 11l3 3 8-8"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>Tipp</button>
+  <button data-tab="bonus"><span class="navflag">🇳🇴</span>Bonus</button>
   <button data-tab="tabell"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-6M22 20H2"/></svg>Tabell</button>
   <button data-tab="admin"><svg viewBox="0 0 24 24"><path d="M6 9V6a6 6 0 0 1 12 0v3"/><rect x="4" y="9" width="16" height="11" rx="2"/></svg>Arrangør</button>
 </div></nav>
@@ -533,14 +562,34 @@ const $=s=>document.querySelector(s);
 const slug=s=>s.trim().toLowerCase().replace(/[^a-z0-9æøå]+/g,"-").replace(/^-|-$/g,"");
 const mid=m=>String(m||"").replace(/\D/g,"");  // mobil = unik ID (8 siffer)
 let META={phase:"groups",ko:[]};      // arrangør-styrt
-let RESULTS={advance:{},ko:{}};       // fasit
+let RESULTS={advance:{},ko:{},bonus:{}};       // fasit
+// Bonusspill – Norges gruppekamper. auto: utledes fra kampresultat (football-data);
+// null = settes manuelt av arrangør (mål-/assist-spørsmål finnes ikke i gratis-API-et).
+const BONUS=[
+  {id:"nor_irak", title:"Norge – Irak", opp:"Irak", start:"2026-06-17T00:00:00", q:[
+    {id:"q1", t:"Scorer Haaland?", auto:null},
+    {id:"q2", t:"Får Ødegaard assist?", auto:null},
+    {id:"q3", t:"Scorer Norge først?", auto:null} ]},
+  {id:"nor_sen", title:"Norge – Senegal", opp:"Senegal", start:"2026-06-23T02:00:00", q:[
+    {id:"q1", t:"Scorer begge lag?", auto:"both"},
+    {id:"q2", t:"Scorer Haaland?", auto:null},
+    {id:"q3", t:"Tar Norge poeng?", auto:"norpts"} ]},
+  {id:"nor_fra", title:"Norge – Frankrike", opp:"Frankrike", start:"2026-06-26T21:00:00", q:[
+    {id:"q1", t:"Holder Norge nullen?", auto:"norclean"},
+    {id:"q2", t:"Får Ødegaard assist?", auto:null},
+    {id:"q3", t:"Tar Norge poeng?", auto:"norpts"} ]}
+];
+const bonusStart=b=>new Date(b.start);
+const bonusLocked=b=>Date.now()>bonusStart(b).getTime();
 const state={ user:null, pv:"groups",
-  advance:Object.fromEntries(Object.keys(GROUPS).map(g=>[g,[]])), ko:{} };
+  advance:Object.fromEntries(Object.keys(GROUPS).map(g=>[g,[]])), ko:{}, bonus:{} };
 const adminG=Object.fromEntries(Object.keys(GROUPS).map(g=>[g,[]]));
+let curTab="tipp";       // hvilken hovedfane som vises
 let dirtyGroups=false;  // ulagrede endringer i del 1
 let dirtyKo=false;      // ulagrede endringer i del 2
-const saving={groups:false,ko:false};   // pågående lagring til database
-const saveErr={groups:false,ko:false};   // siste lagring feilet
+let dirtyBonus=false;   // ulagrede endringer i bonus
+const saving={groups:false,ko:false,bonus:false};   // pågående lagring til database
+const saveErr={groups:false,ko:false,bonus:false};   // siste lagring feilet
 const _saveT={};        // tidtakere for autolagring (debounce)
 const _retryT={};       // tidtakere for nytt forsøk ved feil
 let _allCache=null;     // mellomlager: alle deltakere + tips (kort levetid)
@@ -573,7 +622,8 @@ async function init(){
   FULL_BRACKET.forEach(m=>{ if(!have.has(m.id)){ META.ko.push({...m}); added=true; } });
   // (meta lagres kun når arrangøren gjør en endring; RLS sperrer skriving for andre)
   state.pv = META.phase==="groups" ? "groups" : "knockout";
-  RESULTS=await DB.get("results")||{advance:{},ko:{}};
+  RESULTS=await DB.get("results")||{advance:{},ko:{},bonus:{}};
+  RESULTS.advance=RESULTS.advance||{}; RESULTS.ko=RESULTS.ko||{}; RESULTS.bonus=RESULTS.bonus||{};
   fillSel($("#koA")); fillSel($("#koB"));
   $("#prizes").innerHTML=(CONFIG.prizes||[]).map((p,i)=>'<div class="prize'+(i===0?" g1":"")+'"><div class="pl">'+(i===0?"🏆 ":"")+esc(p.place)+'</div><div class="pz">'+esc(p.prize)+'</div></div>').join("");
   renderStatus();
@@ -664,6 +714,13 @@ async function commitSave(kind,auto){
     if(ok){ dirtyKo=false; saveErr.ko=false; saveDraftKo(); refreshKoSave(); if(!auto) flash("✅ Del 2 lagret!"); }
     else { saveErr.ko=true; refreshKoSave(); scheduleRetry("ko"); }
   }
+  if(kind==="bonus"){
+    saving.bonus=true; saveErr.bonus=false; updateSaveBar();
+    let ok=false; try{ ok=await DB.set("bonus:"+id,{b:state.bonus,ts:Date.now()}); }catch(e){ ok=false; }
+    saving.bonus=false;
+    if(ok){ dirtyBonus=false; saveErr.bonus=false; saveDraftBonus(); updateSaveBar(); if(!auto) flash("✅ Bonus lagret!"); }
+    else { saveErr.bonus=true; updateSaveBar(); scheduleRetry("bonus"); }
+  }
 }
 function scheduleRetry(kind){ if(_retryT[kind])clearTimeout(_retryT[kind]); _retryT[kind]=setTimeout(()=>{ _retryT[kind]=null; commitSave(kind,true); },4000); }
 function renderGroupPicks(){
@@ -686,6 +743,16 @@ function refreshGroupSave(){ updateSaveBar(); }
 function updateSaveBar(){
   const bar=$("#saveBar"), btn=$("#saveBarBtn"), note=$("#saveBarNote");
   if(!state.user){ bar.classList.add("hidden"); return; }
+  if(curTab==="bonus"){
+    if(!BONUS.some(b=>!bonusLocked(b))){ bar.classList.add("hidden"); return; }
+    bar.classList.remove("hidden"); btn.onclick=()=>commitSave("bonus",false);
+    if(saveErr.bonus){ btn.disabled=false; btn.textContent="Prøv igjen"; note.innerHTML='<span class="sb-err">⚠️ Kunne ikke lagre – prøver igjen …</span>'; }
+    else if(saving.bonus){ btn.disabled=true; btn.textContent="Lagrer …"; note.textContent="Lagrer …"; }
+    else if(dirtyBonus){ btn.disabled=false; btn.textContent="Lagre bonus"; note.textContent="Ulagrede endringer"; }
+    else { btn.disabled=true; btn.textContent="Lagret ✓"; note.textContent="Alt lagret ✓ · stenger ved avspark"; }
+    return;
+  }
+  if(curTab!=="tipp"){ bar.classList.add("hidden"); return; }
   if(state.pv==="groups"){
     if(groupsLocked()){ bar.classList.add("hidden"); return; }
     const tot=Object.values(state.advance).reduce((a,b)=>a+b.length,0);
@@ -759,6 +826,35 @@ async function renderKoPicks(){
 }
 function refreshKoSave(){ updateSaveBar(); }
 function saveDraftKo(){ if(state.user) DB.setLocal("draftKo:"+mid(state.user.mobile),{ko:state.ko,dirty:dirtyKo,ts:Date.now()}); }
+function saveDraftBonus(){ if(state.user) DB.setLocal("draftBonus:"+mid(state.user.mobile),{b:state.bonus,dirty:dirtyBonus,ts:Date.now()}); }
+function renderBonus(){
+  const host=$("#bonusList");
+  if(!state.user){ $("#bonusLogin").classList.remove("hidden"); host.innerHTML=""; $("#saveBar").classList.add("hidden"); return; }
+  $("#bonusLogin").classList.add("hidden"); host.innerHTML="";
+  BONUS.forEach(b=>{
+    const locked=bonusLocked(b); const mine=state.bonus[b.id]||{}; const fz=(RESULTS.bonus&&RESULTS.bonus[b.id])||{};
+    const t=bonusStart(b).toLocaleString("no-NO",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+    const card=document.createElement("div"); card.className="bcard"+(locked?" locked":"");
+    let html='<div class="bhead"><span class="bttl">🇳🇴 '+esc(b.title)+'</span><span class="btime">'+t+'</span></div>';
+    b.q.forEach(q=>{ const pick=mine[q.id]; const ans=fz[q.id]; const resolved=(ans==="yes"||ans==="no");
+      const correct=resolved&&pick&&pick===ans;
+      const tag=resolved?('<span class="bres '+(pick?(correct?'ok':'bad'):'')+'">Fasit: '+(ans==="yes"?"Ja":"Nei")+(pick?(correct?" · 1 poeng ✓":" · feil ✗"):" · du svarte ikke")+'</span>'):'';
+      html+='<div class="bq"><div class="bqt">'+esc(q.t)+'</div><div class="bopts">'+
+        '<button class="bopt'+(pick==="yes"?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="yes"'+(locked?" disabled":"")+'>Ja</button>'+
+        '<button class="bopt no'+(pick==="no"?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="no"'+(locked?" disabled":"")+'>Nei</button>'+
+        '</div>'+tag+'</div>';
+    });
+    html+='<div class="startline">'+(locked?"🔒 Stengte ved avspark":"⏱ Stenger ved avspark · "+t)+'</div>';
+    card.innerHTML=html;
+    if(!locked) card.querySelectorAll(".bopt").forEach(btn=>btn.onclick=()=>{
+      const bid=btn.dataset.b,qid=btn.dataset.q,v=btn.dataset.v;
+      (state.bonus[bid]=state.bonus[bid]||{})[qid]=v;
+      dirtyBonus=true; saveDraftBonus(); scheduleSave("bonus"); renderBonus();
+    });
+    host.appendChild(card);
+  });
+  updateSaveBar();
+}
 function bindKo(card,m){
   card.querySelectorAll('.koteam[data-adv]').forEach(b=>b.onclick=()=>{
     if(started(m)||META.phase!=="knockout"||koResolved(RESULTS.ko[m.id]))return;
@@ -789,6 +885,9 @@ async function loginUser(name,phone,silent){
   if(draft&&draft.advance){ state.advance=draft.advance; dirtyGroups=!!draft.dirty; } else dirtyGroups=false;
   const draftK=await DB.getLocal("draftKo:"+id);             // lokal kladd del 2 (kan være ulagret)
   if(draftK&&draftK.ko){ state.ko=draftK.ko; dirtyKo=!!draftK.dirty; } else dirtyKo=false;
+  const bn=await DB.get("bonus:"+id); state.bonus=(bn&&bn.b)?bn.b:{};
+  const draftB=await DB.getLocal("draftBonus:"+id);          // lokal kladd bonus
+  if(draftB&&draftB.b){ state.bonus=draftB.b; dirtyBonus=!!draftB.dirty; } else dirtyBonus=false;
   if(!silent) flash(existing?("Velkommen tilbake, "+user.name.split(" ")[0]+"!"):"Du er med! 🎉");
   renderTipp();
 }
@@ -807,13 +906,13 @@ $("#regBtn").onclick=async()=>{
   if(mid(phone).length!==8){ flash("Mobilnummer må være 8 siffer"); return; }
   await loginUser(name,phone,false);
 };
-$("#logout").onclick=async()=>{ state.user=null; dirtyGroups=false; dirtyKo=false;
+$("#logout").onclick=async()=>{ state.user=null; dirtyGroups=false; dirtyKo=false; dirtyBonus=false;
   await DB.setLocal("me",null);
-  state.advance=emptyAdvance(); state.ko={};
+  state.advance=emptyAdvance(); state.ko={}; state.bonus={};
   $("#rName").value=$("#rPhone").value=$("#liPhone").value=""; showRegView(false); renderTipp(); };
 
 /* ---- TABELL ---- */
-function scoreUser(pick,kopick){
+function scoreUser(pick,kopick,bonusPick){
   let g=0,gh=0; // gruppe
   Object.keys(GROUPS).forEach(grp=>{ (pick.advance?.[grp]||[]).forEach(t=>{
     if((RESULTS.advance?.[grp]||[]).includes(t)){ g+=CONFIG.pTeam; gh++; } }); });
@@ -821,17 +920,22 @@ function scoreUser(pick,kopick){
   META.ko.forEach(m=>{ const res=RESULTS.ko?.[m.id]; const mine=kopick.ko?.[m.id]; if(!koResolved(res)||!mine||!mine.adv)return;
     if(mine.adv===res.adv){ k+=CONFIG.pAdvance; kh++; }
   });
+  let bo=0; const bp=(bonusPick&&bonusPick.b)||{};
+  BONUS.forEach(b=>{ const fz=(RESULTS.bonus&&RESULTS.bonus[b.id])||{}; const mine=bp[b.id]||{};
+    b.q.forEach(q=>{ const ans=fz[q.id]; if((ans==="yes"||ans==="no")&&mine[q.id]===ans) bo++; }); });
   const hasG=Object.values(RESULTS.advance||{}).some(a=>a&&a.length);
   const hasK=Object.values(RESULTS.ko||{}).some(koResolved);
-  return {total:g+k,g,k,gh,kh,hasResults:hasG||hasK};
+  const hasB=Object.values(RESULTS.bonus||{}).some(o=>o&&Object.values(o).some(v=>v==="yes"||v==="no"));
+  return {total:g+k+bo,g,k,b:bo,gh,kh,hasResults:hasG||hasK||hasB};
 }
 async function loadAllPicks(force){
   if(!force && _allCache && Date.now()-_allCache.ts<15000) return _allCache;
-  const [users,picks,kopicks]=await Promise.all([DB.listFull("user:"),DB.listFull("pick:"),DB.listFull("kopick:")]);
-  const pickBy={},koBy={};
+  const [users,picks,kopicks,bonuses]=await Promise.all([DB.listFull("user:"),DB.listFull("pick:"),DB.listFull("kopick:"),DB.listFull("bonus:")]);
+  const pickBy={},koBy={},bonusBy={};
   picks.forEach(r=>{ pickBy[r.key.replace("pick:","")]=r.value; });
   kopicks.forEach(r=>{ koBy[r.key.replace("kopick:","")]=r.value; });
-  _allCache={users:users.map(r=>r.value).filter(Boolean),pickBy,koBy,ts:Date.now()};
+  bonuses.forEach(r=>{ bonusBy[r.key.replace("bonus:","")]=r.value; });
+  _allCache={users:users.map(r=>r.value).filter(Boolean),pickBy,koBy,bonusBy,ts:Date.now()};
   return _allCache;
 }
 function computeKoDist(koBy){
@@ -876,12 +980,12 @@ function openPicks(name,pick,kopick){
   $("#pmBody").innerHTML=html; $("#pickModal").classList.remove("hidden");
 }
 async function renderTabell(){
-  const all=await loadAllPicks(true); const {pickBy,koBy}=all;
+  const all=await loadAllPicks(true); const {pickBy,koBy,bonusBy}=all;
   const rows=[];
   for(const u of all.users){ if(!u||!u.mobile)continue; const sl=mid(u.mobile);
     const pk=pickBy[sl]||{advance:{}};
     const gtot=pk.advance?Object.values(pk.advance).reduce((a,b)=>a+(b?b.length:0),0):0;
-    rows.push({u,s:scoreUser(pk, koBy[sl]||{ko:{}}), del1done:gtot>=24, pick:pk, kopick:koBy[sl]||{ko:{}}});
+    rows.push({u,s:scoreUser(pk, koBy[sl]||{ko:{}}, bonusBy[sl]||{}), del1done:gtot>=24, pick:pk, kopick:koBy[sl]||{ko:{}}});
   }
   $("#lbCount").textContent=rows.length?rows.length+" deltakere":"";
   const any=rows.some(r=>r.s.hasResults);
@@ -894,7 +998,7 @@ async function renderTabell(){
   rows.forEach((r,i)=>{
     const mine=me&&mid(r.u.mobile)===me; if(mine)myIdx=i;
     const row=document.createElement("div"); row.className="row clk"+(any&&i<3?" p"+(i+1):"")+(mine?" you":"");
-    const d = any ? (r.s.g+"p gruppe · "+r.s.k+"p sluttspill") : (r.del1done?"klar til kamp":"gjør analyser");
+    const d = any ? (r.s.g+"p gruppe · "+r.s.k+"p sluttspill"+(r.s.b?(" · "+r.s.b+"p bonus"):"")) : (r.del1done?"klar til kamp":"gjør analyser");
     row.innerHTML='<div class="pos">'+(any?(i+1):"•")+'</div>'+
       '<div class="who"><div class="n">'+esc(r.u.name)+(mine?'<span class="badge">DEG</span>':'')+'</div><div class="d">'+d+' ›</div></div>'+
       (any?'<div class="pts">'+r.s.total+'<small>POENG</small></div>':'<div class="pts" style="font-size:14px;color:var(--muted)">Med ✓</div>');
@@ -975,7 +1079,26 @@ function normWC(standingsArr,matchesArr){
     winner: x.status==="FINISHED" ? (x.score&&x.score.winner==="HOME_TEAM"?(x.homeTeam&&x.homeTeam.name)
       : x.score&&x.score.winner==="AWAY_TEAM"?(x.awayTeam&&x.awayTeam.name):null) : null
   }));
-  return {standings,ko};
+  // Norges kamper (for bonus-fasit som kan utledes av resultatet)
+  const nor=[];
+  (matchesArr||[]).forEach(x=>{ const h=mapTeam(x.homeTeam&&x.homeTeam.name), a=mapTeam(x.awayTeam&&x.awayTeam.name);
+    if(h!=="Norge"&&a!=="Norge")return; const ft=(x.score&&x.score.fullTime)||{};
+    const norHome=h==="Norge"; const norG=norHome?ft.home:ft.away, oppG=norHome?ft.away:ft.home;
+    nor.push({opp:(norHome?a:h), status:x.status, norG, oppG});
+  });
+  return {standings,ko,nor};
+}
+function resolveBonusAuto(nor){
+  if(!Array.isArray(nor))return;
+  RESULTS.bonus=RESULTS.bonus||{};
+  BONUS.forEach(b=>{ const m=nor.find(n=>n.opp===b.opp); if(!m||m.status!=="FINISHED"||m.norG==null||m.oppG==null)return;
+    const fz=RESULTS.bonus[b.id]=RESULTS.bonus[b.id]||{};
+    b.q.forEach(q=>{ if(!q.auto)return;
+      if(q.auto==="both")   fz[q.id]=(m.norG>0&&m.oppG>0)?"yes":"no";
+      if(q.auto==="norpts") fz[q.id]=(m.norG>=m.oppG)?"yes":"no";
+      if(q.auto==="norclean")fz[q.id]=(m.oppG===0)?"yes":"no";
+    });
+  });
 }
 
 $("#fdToken").onchange=()=>adminCfgSet("fdtoken",$("#fdToken").value.trim());
@@ -1026,6 +1149,7 @@ $("#importBtn").onclick=async()=>{
         const w=mapTeam(fm.winner); if(w) RESULTS.ko[om.id]={adv:w};
       });
     });
+    resolveBonusAuto(d.nor);   // bonus-fasit som kan utledes av Norges kampresultat
     await DB.set("results",RESULTS); await DB.set("meta",META);
     renderAdmin();
     const uniq=[...new Set(unmapped)];
@@ -1036,8 +1160,32 @@ $("#importBtn").onclick=async()=>{
 function renderAdmin(){
   document.querySelectorAll(".phasebtns button").forEach(b=>b.classList.toggle("cur",b.dataset.set===META.phase));
   buildGroups($("#adminGroups"),adminG,(g,n)=>{ if(tog(adminG,g,n)) renderAdmin(); },false);
-  renderKoList(); renderAdminKo(); renderContacts(); renderReminders();
+  renderKoList(); renderAdminKo(); renderAdminBonus(); renderContacts(); renderReminders();
 }
+function renderAdminBonus(){
+  const host=$("#adminBonus"); if(!host)return; host.innerHTML="";
+  RESULTS.bonus=RESULTS.bonus||{};
+  BONUS.forEach(b=>{
+    const fz=RESULTS.bonus[b.id]=RESULTS.bonus[b.id]||{};
+    const card=document.createElement("div"); card.className="bcard";
+    let html='<div class="bhead"><span class="bttl">🇳🇴 '+esc(b.title)+'</span></div>';
+    b.q.forEach(q=>{ const v=fz[q.id];
+      html+='<div class="bq"><div class="bqt">'+esc(q.t)+(q.auto?' <span class="muted">(auto)</span>':'')+'</div><div class="bopts">'+
+        '<button class="bopt'+(v==="yes"?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="yes">Ja</button>'+
+        '<button class="bopt no'+(v==="no"?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="no">Nei</button>'+
+        '<button class="bopt'+(!v?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="">Åpen</button>'+
+        '</div></div>';
+    });
+    card.innerHTML=html;
+    card.querySelectorAll(".bopt").forEach(btn=>btn.onclick=()=>{
+      const fzz=RESULTS.bonus[btn.dataset.b]=RESULTS.bonus[btn.dataset.b]||{};
+      if(btn.dataset.v==="") delete fzz[btn.dataset.q]; else fzz[btn.dataset.q]=btn.dataset.v;
+      renderAdminBonus();
+    });
+    host.appendChild(card);
+  });
+}
+$("#saveResBonus").onclick=async()=>{ await DB.set("results",RESULTS); flash("Bonus-fasit lagret ✓"); };
 document.querySelectorAll(".phasebtns button").forEach(b=>b.onclick=async()=>{
   META.phase=b.dataset.set; await DB.set("meta",META); renderStatus(); renderAdmin();
   flash("Fase: "+b.textContent);
@@ -1103,11 +1251,13 @@ async function renderContacts(){
 
 /* ---- faner ---- */
 function switchTab(t){
-  ["tipp","tabell","admin"].forEach(x=>$("#view-"+x).classList.toggle("hidden",x!==t));
+  curTab=t;
+  ["tipp","bonus","tabell","admin"].forEach(x=>$("#view-"+x).classList.toggle("hidden",x!==t));
   document.querySelectorAll(".nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
-  if(t!=="tipp") $("#saveBar").classList.add("hidden");
+  if(t!=="tipp"&&t!=="bonus") $("#saveBar").classList.add("hidden");
   if(t==="tabell") renderTabell();
   if(t==="tipp") renderTipp();
+  if(t==="bonus") renderBonus();
 }
 document.querySelectorAll(".nav button").forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
 document.querySelectorAll(".pswitch button").forEach(b=>b.onclick=()=>{ if(b.disabled)return; state.pv=b.dataset.p; renderTipp(); });
