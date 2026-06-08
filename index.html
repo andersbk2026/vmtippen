@@ -231,6 +231,7 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 .pm-ko{font-size:14px;padding:6px 0;border-bottom:1px solid var(--line)}
 .pm-rnd{display:inline-block;font-size:11px;font-weight:700;color:var(--muted);min-width:96px}
 .pm-ko .ok{color:var(--green);font-weight:800} .pm-ko .bad{color:var(--danger);font-weight:800}
+.pm-bm{font-weight:800;font-size:14px;margin:10px 0 2px}
 .savebar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(56px + env(safe-area-inset-bottom));z-index:25;
   width:calc(100% - 24px);max-width:520px;display:flex;align-items:center;gap:12px;justify-content:space-between;
   background:var(--white);border:1px solid var(--line2);border-radius:14px;padding:10px 12px 10px 16px;
@@ -960,8 +961,8 @@ function tickCountdowns(){
 }
 setInterval(tickCountdowns,1000);
 // Se en deltakers tips – kun det som allerede er låst (ingen kan kopiere før avspark)
-function openPicks(name,pick,kopick){
-  const adv=(pick&&pick.advance)||{}, ko=(kopick&&kopick.ko)||{};
+function openPicks(name,pick,kopick,bonusPick){
+  const adv=(pick&&pick.advance)||{}, ko=(kopick&&kopick.ko)||{}, bp=(bonusPick&&bonusPick.b)||{};
   let html='<div class="pm-title">'+esc(name)+'</div><div class="pm-sec">Gruppespill</div>';
   if(groupsLocked()){
     const fz=RESULTS.advance||{}; const hasF=Object.values(fz).some(a=>a&&a.length);
@@ -977,6 +978,17 @@ function openPicks(name,pick,kopick){
     shown.forEach(m=>{ const mine=ko[m.id]&&ko[m.id].adv; const res=RESULTS.ko[m.id]; const rz=koResolved(res); const ok=rz&&mine&&mine===res.adv;
       html+='<div class="pm-ko"><span class="pm-rnd">'+esc(m.round)+'</span> '+esc(m.a)+'–'+esc(m.b)+' → <b>'+(mine?(fl(mine)+" "+esc(mine)):"(ikke tippet)")+'</b>'+(rz?(ok?' <span class="ok">✓</span>':' <span class="bad">✗</span>'):'')+'</div>'; });
   }
+  // Bonus – kun kamper som er låst (etter avspark)
+  const shownB=BONUS.filter(b=>bonusLocked(b));
+  if(shownB.length){
+    let bin="", bpts=0;
+    shownB.forEach(b=>{ const mine=bp[b.id]||{}; const fz=(RESULTS.bonus&&RESULTS.bonus[b.id])||{};
+      bin+='<div class="pm-bm">🇳🇴 '+esc(b.title)+'</div>';
+      b.q.forEach(q=>{ const ans=fz[q.id]; const rz=(ans==="yes"||ans==="no"); const my=mine[q.id]; const ok=rz&&my&&my===ans; if(ok)bpts++;
+        bin+='<div class="pm-ko"><span class="pm-rnd">'+esc(q.t)+'</span> <b>'+(my?(my==="yes"?"Ja":"Nei"):"(ikke svart)")+'</b>'+(rz?(ok?' <span class="ok">✓</span>':' <span class="bad">✗</span>'):'')+'</div>'; });
+    });
+    html+='<div class="pm-sec">🇳🇴 Bonus · '+bpts+' poeng</div>'+bin;
+  }
   $("#pmBody").innerHTML=html; $("#pickModal").classList.remove("hidden");
 }
 async function renderTabell(){
@@ -985,7 +997,7 @@ async function renderTabell(){
   for(const u of all.users){ if(!u||!u.mobile)continue; const sl=mid(u.mobile);
     const pk=pickBy[sl]||{advance:{}};
     const gtot=pk.advance?Object.values(pk.advance).reduce((a,b)=>a+(b?b.length:0),0):0;
-    rows.push({u,s:scoreUser(pk, koBy[sl]||{ko:{}}, bonusBy[sl]||{}), del1done:gtot>=24, pick:pk, kopick:koBy[sl]||{ko:{}}});
+    rows.push({u,s:scoreUser(pk, koBy[sl]||{ko:{}}, bonusBy[sl]||{}), del1done:gtot>=24, pick:pk, kopick:koBy[sl]||{ko:{}}, bonus:bonusBy[sl]||{}});
   }
   $("#lbCount").textContent=rows.length?rows.length+" deltakere":"";
   const any=rows.some(r=>r.s.hasResults);
@@ -1002,7 +1014,7 @@ async function renderTabell(){
     row.innerHTML='<div class="pos">'+(any?(i+1):"•")+'</div>'+
       '<div class="who"><div class="n">'+esc(r.u.name)+(mine?'<span class="badge">DEG</span>':'')+'</div><div class="d">'+d+' ›</div></div>'+
       (any?'<div class="pts">'+r.s.total+'<small>POENG</small></div>':'<div class="pts" style="font-size:14px;color:var(--muted)">Med ✓</div>');
-    row.onclick=()=>openPicks(r.u.name,r.pick,r.kopick);
+    row.onclick=()=>openPicks(r.u.name,r.pick,r.kopick,r.bonus);
     lb.appendChild(row);
   });
   // Din plassering + hopp-til-meg
