@@ -350,10 +350,13 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
   <!-- ===== TABELL ===== -->
   <section id="view-tabell" class="hidden">
     <div class="sec"><h2>Topp<span class="serif">tabell</span></h2><span class="note" id="lbCount"></span></div>
+    <div id="tabellLogin" class="hidden"><div class="empty"><div class="big">Logg inn for å se tabellen</div>Av personvernhensyn vises deltakere og poeng kun for innloggede. Gå til <b>Tipp</b> og logg inn med mobilnummeret ditt.</div></div>
+    <div id="tabellBody">
     <div class="prizes" id="prizes"></div>
     <div id="lbStatus"></div>
     <div id="lbMe" class="lbme hidden"></div>
     <div id="leaderboard"></div>
+    </div>
   </section>
 
   <!-- ===== ARRANGØR ===== -->
@@ -1042,6 +1045,11 @@ function openPicks(name,pick,kopick,bonusPick){
   $("#pmBody").innerHTML=html; $("#pickModal").classList.remove("hidden");
 }
 async function renderTabell(){
+  const li=!!state.user;
+  $("#tabellLogin").classList.toggle("hidden",li);
+  $("#tabellBody").classList.toggle("hidden",!li);
+  $("#lbCount").textContent="";
+  if(!li){ $("#lbMe").classList.add("hidden"); return; }   // skjult for ikke-innloggede
   const all=await loadAllPicks(true); const {pickBy,koBy,bonusBy}=all;
   const rows=[];
   for(const u of all.users){ if(!u||!u.mobile)continue; const sl=mid(u.mobile);
