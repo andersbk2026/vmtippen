@@ -299,6 +299,16 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
           <div class="hint">Navnet huskes på mobilnummeret. Allerede registrert? <button type="button" id="toLogin" class="linkbtn">Logg inn</button></div>
         </div>
       </div>
+      <!-- ENGANGSKODE (OTP) -->
+      <div id="viewOtp" class="hidden">
+        <div class="sec"><h2>Skriv inn koden</h2><span class="note">sendt på SMS</span></div>
+        <div class="card">
+          <div class="hint" id="otpInfo" style="margin:0 0 12px"></div>
+          <div class="field"><label class="fld" for="otpCode">Engangskode (4 siffer)</label><input class="txt" id="otpCode" type="tel" autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="••••" style="letter-spacing:.5em;text-align:center;font-size:24px"></div>
+          <button id="otpVerify" class="btn btn-primary">Logg inn</button>
+          <div class="hint" style="margin-top:12px;display:flex;justify-content:space-between;gap:8px"><button type="button" id="otpBack" class="linkbtn">← Endre nummer</button><button type="button" id="otpResend" class="linkbtn">Send på nytt</button></div>
+        </div>
+      </div>
     </div>
 
     <!-- Innlogget -->
@@ -869,9 +879,45 @@ function bindKo(card,m){
 function numOnly(e){ e.target.value=e.target.value.replace(/\D/g,"").slice(0,8); }
 $("#rPhone").addEventListener("input",numOnly);
 $("#liPhone").addEventListener("input",numOnly);
-function showRegView(on){ $("#viewReg").classList.toggle("hidden",!on); $("#viewLogin").classList.toggle("hidden",on); }
-$("#toReg").onclick=()=>{ $("#rPhone").value=$("#liPhone").value; showRegView(true); };
-$("#toLogin").onclick=()=>{ $("#liPhone").value=$("#rPhone").value; showRegView(false); };
+$("#otpCode")&&$("#otpCode").addEventListener("input",e=>{ e.target.value=e.target.value.replace(/\D/g,"").slice(0,4); });
+function showStep(step){ $("#viewLogin").classList.toggle("hidden",step!=="login"); $("#viewReg").classList.toggle("hidden",step!=="reg"); $("#viewOtp").classList.toggle("hidden",step!=="otp"); }
+function showRegView(on){ showStep(on?"reg":"login"); }
+$("#toReg").onclick=()=>{ $("#rPhone").value=$("#liPhone").value; showStep("reg"); };
+$("#toLogin").onclick=()=>{ $("#liPhone").value=$("#rPhone").value; showStep("login"); };
+// OTP (engangskode på SMS) – via serverfunksjon. I forhåndsvisning (uten server) logges man rett inn.
+const otpEnabled=()=> (typeof SB!=="undefined" && SB && !!CONFIG.SUPABASE_URL);
+const otpUrl=()=> CONFIG.SUPABASE_URL.replace(/\/$/,"")+"/functions/v1/otp";
+let otpPending=null;
+async function otpCall(payload){
+  try{ const r=await fetch(otpUrl(),{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+CONFIG.SUPABASE_ANON_KEY},body:JSON.stringify(payload)});
+    return await r.json().catch(()=>({error:"svarfeil"})); }
+  catch(e){ return {error:"nettverksfeil"}; }
+}
+async function sendOtp(mobile,name,mode){
+  if(!otpEnabled()){ // ingen server (forhåndsvisning/demo) → logg rett inn
+    if(mode==="login"){ const ex=await DB.get("user:"+mid(mobile)); if(!ex){ flash("Nummeret er ikke registrert ennå – registrer deg først"); $("#rPhone").value=mobile; showStep("reg"); return; } await loginUser(ex.name,mobile,false); }
+    else await loginUser(name,mobile,false);
+    return;
+  }
+  flash("Sender kode …");
+  const out=await otpCall({action:"request",mobile});
+  if(out.error){ flash(out.error==="sms ikke konfigurert"?"SMS er ikke satt opp ennå – kontakt arrangør.":"Kunne ikke sende kode. Prøv igjen."); return; }
+  otpPending={mobile,name,mode};
+  $("#otpInfo").innerHTML="Vi sendte en 4-sifret kode til <b>"+mid(mobile)+"</b>. Skriv den inn under. Koden er gyldig i 10 minutter.";
+  $("#otpCode").value=""; showStep("otp"); setTimeout(()=>$("#otpCode").focus(),60);
+}
+async function verifyOtp(){
+  if(!otpPending) return;
+  const code=($("#otpCode").value||"").replace(/\D/g,"");
+  if(code.length!==4){ flash("Skriv inn den 4-sifrede koden"); return; }
+  flash("Sjekker kode …");
+  const out=await otpCall({action:"verify",mobile:otpPending.mobile,code});
+  if(!out.ok){ flash(out.reason==="utløpt"?"Koden er utløpt – send en ny.":out.reason==="for mange forsøk"?"For mange forsøk – send en ny kode.":"Feil kode. Prøv igjen."); return; }
+  const ex=await DB.get("user:"+mid(otpPending.mobile));
+  const nm=otpPending.name||(ex&&ex.name)||"Deltaker";
+  const mob=otpPending.mobile; otpPending=null; $("#otpCode").value="";
+  await loginUser(nm,mob,false);
+}
 async function loginUser(name,phone,silent){
   const id=mid(phone); const key="user:"+id;
   const existing=await DB.get(key);
@@ -892,25 +938,29 @@ async function loginUser(name,phone,silent){
   if(!silent) flash(existing?("Velkommen tilbake, "+user.name.split(" ")[0]+"!"):"Du er med! 🎉");
   renderTipp();
 }
-// Logg inn: kun mobilnummer (må være registrert fra før)
+// Logg inn: mobilnummer → engangskode på SMS (må være registrert fra før)
 $("#loginBtn").onclick=async()=>{
   const phone=$("#liPhone").value.trim(), id=mid(phone);
   if(id.length!==8){ flash("Mobilnummer må være 8 siffer"); return; }
-  const existing=await DB.get("user:"+id);
-  if(!existing){ flash("Nummeret er ikke registrert ennå – registrer deg først"); $("#rPhone").value=phone; showRegView(true); return; }
-  await loginUser(existing.name,phone,false);
+  if(otpEnabled()){ const existing=await DB.get("user:"+id);
+    if(!existing){ flash("Nummeret er ikke registrert ennå – registrer deg først"); $("#rPhone").value=phone; showStep("reg"); return; }
+    await sendOtp(phone, existing.name, "login");
+  } else { await sendOtp(phone, null, "login"); }
 };
-// Registrer: navn + mobil (navnet huskes på nummeret)
+// Registrer: navn + mobil → engangskode på SMS
 $("#regBtn").onclick=async()=>{
   const name=$("#rName").value.trim(), phone=$("#rPhone").value.trim();
   if(!name){ flash("Fyll inn navnet ditt"); return; }
   if(mid(phone).length!==8){ flash("Mobilnummer må være 8 siffer"); return; }
-  await loginUser(name,phone,false);
+  await sendOtp(phone, name, "register");
 };
-$("#logout").onclick=async()=>{ state.user=null; dirtyGroups=false; dirtyKo=false; dirtyBonus=false;
+$("#otpVerify").onclick=verifyOtp;
+$("#otpResend").onclick=()=>{ if(otpPending) sendOtp(otpPending.mobile, otpPending.name, otpPending.mode); };
+$("#otpBack").onclick=()=>{ otpPending=null; showStep("login"); };
+$("#logout").onclick=async()=>{ state.user=null; dirtyGroups=false; dirtyKo=false; dirtyBonus=false; otpPending=null;
   await DB.setLocal("me",null);
   state.advance=emptyAdvance(); state.ko={}; state.bonus={};
-  $("#rName").value=$("#rPhone").value=$("#liPhone").value=""; showRegView(false); renderTipp(); };
+  $("#rName").value=$("#rPhone").value=$("#liPhone").value=""; showStep("login"); renderTipp(); };
 
 /* ---- TABELL ---- */
 function scoreUser(pick,kopick,bonusPick){
