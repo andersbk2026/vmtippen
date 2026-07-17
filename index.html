@@ -255,6 +255,16 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 .bopt:disabled{opacity:.55;cursor:default}
 .bres{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:var(--muted)}
 .bres.ok{color:var(--green)} .bres.bad{color:var(--danger)}
+.bopts3{display:flex;gap:6px}
+.bopts3 .bopt{font-size:12.5px;padding:9px 2px}
+.bpts{display:inline-block;background:var(--mint);color:var(--green);font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px;margin-left:2px}
+.bscore{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bscore .bsl{font-weight:700;font-size:13px;flex:1 1 60px;min-width:0}
+.bscore .bsr{text-align:right}
+.bnum{width:46px;text-align:center;font:800 18px 'Inter';padding:8px 2px;border:1.5px solid var(--line2);border-radius:10px;background:var(--cream);color:var(--ink)}
+.bnum:focus{border-color:var(--blue);outline:none}
+.bsdash{font-weight:800;color:var(--muted)}
+#adminBonus .aclear,#adminBonus .bopt[data-set=""]{flex:0 0 auto}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -591,10 +601,32 @@ const BONUS=[
   {id:"nor_fra", title:"Norge – Frankrike", opp:"Frankrike", start:"2026-06-26T21:00:00", q:[
     {id:"q1", t:"Holder Norge nullen?", auto:"norclean"},
     {id:"q2", t:"Får Ødegaard assist?", auto:null},
-    {id:"q3", t:"Tar Norge poeng?", auto:"norpts"} ]}
+    {id:"q3", t:"Tar Norge poeng?", auto:"norpts"} ]},
+  {id:"final", title:"🇪🇸 Spania – 🇦🇷 Argentina", finalRef:true, start:"2026-07-19T21:00:00",
+    home:"Spania", homeFlag:"🇪🇸", away:"Argentina", awayFlag:"🇦🇷", q:[
+    {id:"q1", t:"Hvem scorer første mål? (etter 90 min)", type:"pick3", p:1, auto:null},
+    {id:"q2", t:"Over/under 2,5 mål? (etter 90 min)", type:"ou", p:1, auto:null},
+    {id:"q3", t:"Korrekt resultat etter 90 min", type:"score", p:3, auto:null},
+    {id:"q4", t:"Korrekt resultat etter 1. omgang", type:"scoreHT", p:3, auto:null},
+    {id:"q5", t:"Scorer begge lag? (etter 90 min)", type:"yn", p:1, auto:null} ]}
 ];
-const bonusStart=b=>new Date(b.start);
+// Finalen låses ved faktisk avspark hvis finalekampen finnes i META.ko, ellers fast dato.
+function bonusStart(b){ if(b.finalRef){ const fin=(META.ko||[]).find(m=>m&&m.round==="Finale"&&m.start); if(fin) return new Date(fin.start); } return new Date(b.start); }
 const bonusLocked=b=>Date.now()>bonusStart(b).getTime();
+const bqType=q=>q.type||"yn";
+const bqPts=q=>q.p||1;
+function bqResolved(q,a){ const t=bqType(q);
+  if(t==="yn") return a==="yes"||a==="no";
+  if(t==="pick3") return a==="home"||a==="none"||a==="away";
+  if(t==="ou") return a==="over"||a==="under";
+  if(t==="score"||t==="scoreHT") return typeof a==="string"&&/^\d+-\d+$/.test(a);
+  return false; }
+function bqCorrect(q,pick,a){ return bqResolved(q,a)&&pick!=null&&pick!==""&&String(pick)===String(a); }
+function bqLabel(b,q,v){ if(v==null||v==="")return""; const t=bqType(q);
+  if(t==="yn") return v==="yes"?"Ja":"Nei";
+  if(t==="pick3") return v==="home"?((b.homeFlag||"")+" "+b.home):v==="away"?((b.awayFlag||"")+" "+b.away):"Ingen";
+  if(t==="ou") return v==="over"?"Over 2,5":"Under 2,5";
+  return String(v); }
 const state={ user:null, pv:"groups",
   advance:Object.fromEntries(Object.keys(GROUPS).map(g=>[g,[]])), ko:{}, bonus:{} };
 const adminG=Object.fromEntries(Object.keys(GROUPS).map(g=>[g,[]]));
@@ -841,31 +873,43 @@ async function renderKoPicks(){
 function refreshKoSave(){ updateSaveBar(); }
 function saveDraftKo(){ if(state.user) DB.setLocal("draftKo:"+mid(state.user.mobile),{ko:state.ko,dirty:dirtyKo,ts:Date.now()}); }
 function saveDraftBonus(){ if(state.user) DB.setLocal("draftBonus:"+mid(state.user.mobile),{b:state.bonus,dirty:dirtyBonus,ts:Date.now()}); }
+function bonusInput(b,q,val){ const t=bqType(q);
+  const btn=(v,lbl,cls)=>'<button class="bopt'+(cls||"")+(val===v?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="'+v+'">'+lbl+'</button>';
+  if(t==="pick3") return '<div class="bopts bopts3">'+btn("home",(b.homeFlag||"")+" "+esc(b.home))+btn("none","Ingen")+btn("away",(b.awayFlag||"")+" "+esc(b.away))+'</div>';
+  if(t==="ou") return '<div class="bopts">'+btn("over","Over 2,5")+btn("under","Under 2,5")+'</div>';
+  if(t==="score"||t==="scoreHT"){ const m=/^(\d+)-(\d+)$/.exec(val||""); const hv=m?m[1]:"",av=m?m[2]:"";
+    return '<div class="bscore"><span class="bsl">'+(b.homeFlag||"")+' '+esc(b.home||"Hjemme")+'</span>'+
+      '<input class="bnum" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="2" data-b="'+b.id+'" data-q="'+q.id+'" data-side="h" value="'+hv+'">'+
+      '<span class="bsdash">–</span>'+
+      '<input class="bnum" type="tel" inputmode="numeric" pattern="[0-9]*" maxlength="2" data-b="'+b.id+'" data-q="'+q.id+'" data-side="a" value="'+av+'">'+
+      '<span class="bsl bsr">'+esc(b.away||"Borte")+' '+(b.awayFlag||"")+'</span></div>'; }
+  return '<div class="bopts">'+btn("yes","Ja")+btn("no","Nei"," no")+'</div>'; }
+function setBonus(bid,qid,v,noRender){ const s=(state.bonus[bid]=state.bonus[bid]||{});
+  if(v===""||v==null) delete s[qid]; else s[qid]=v;
+  dirtyBonus=true; saveDraftBonus(); scheduleSave("bonus");
+  if(noRender) updateSaveBar(); else renderBonus(); }
+function bindBonus(card){
+  card.querySelectorAll(".bopt").forEach(btn=>btn.onclick=()=>setBonus(btn.dataset.b,btn.dataset.q,btn.dataset.v));
+  card.querySelectorAll(".bnum").forEach(inp=>inp.addEventListener("input",()=>{
+    inp.value=inp.value.replace(/\D/g,"").slice(0,2);
+    const w=inp.closest(".bscore"); const h=w.querySelector('[data-side="h"]').value, a=w.querySelector('[data-side="a"]').value;
+    setBonus(inp.dataset.b,inp.dataset.q,(h!==""&&a!=="")?(h+"-"+a):"",true);
+  }));
+}
 function renderBonus(){
   const host=$("#bonusList");
   if(!state.user){ $("#bonusLogin").classList.remove("hidden"); host.innerHTML=""; $("#saveBar").classList.add("hidden"); return; }
   $("#bonusLogin").classList.add("hidden"); host.innerHTML="";
-  BONUS.forEach(b=>{
-    const locked=bonusLocked(b); const mine=state.bonus[b.id]||{}; const fz=(RESULTS.bonus&&RESULTS.bonus[b.id])||{};
+  const active=BONUS.filter(b=>!bonusLocked(b));   // skjul spill som har passert
+  if(!active.length){ host.innerHTML='<div class="empty"><div class="big">Ingen aktive bonusspill nå</div>Passerte spill er skjult. Se poengene dine i <b>Tabell</b>.</div>'; updateSaveBar(); return; }
+  active.forEach(b=>{
+    const mine=state.bonus[b.id]||{};
     const t=bonusStart(b).toLocaleString("no-NO",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
-    const card=document.createElement("div"); card.className="bcard"+(locked?" locked":"");
-    let html='<div class="bhead"><span class="bttl">🇳🇴 '+esc(b.title)+'</span><span class="btime">'+t+'</span></div>';
-    b.q.forEach(q=>{ const pick=mine[q.id]; const ans=fz[q.id]; const resolved=(ans==="yes"||ans==="no");
-      const correct=resolved&&pick&&pick===ans;
-      const tag=resolved?('<span class="bres '+(pick?(correct?'ok':'bad'):'')+'">Fasit: '+(ans==="yes"?"Ja":"Nei")+(pick?(correct?" · 1 poeng ✓":" · feil ✗"):" · du svarte ikke")+'</span>'):'';
-      html+='<div class="bq"><div class="bqt">'+esc(q.t)+'</div><div class="bopts">'+
-        '<button class="bopt'+(pick==="yes"?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="yes"'+(locked?" disabled":"")+'>Ja</button>'+
-        '<button class="bopt no'+(pick==="no"?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="no"'+(locked?" disabled":"")+'>Nei</button>'+
-        '</div>'+tag+'</div>';
-    });
-    html+='<div class="startline">'+(locked?"🔒 Stengte ved avspark":"⏱ Stenger ved avspark · "+t)+'</div>';
-    card.innerHTML=html;
-    if(!locked) card.querySelectorAll(".bopt").forEach(btn=>btn.onclick=()=>{
-      const bid=btn.dataset.b,qid=btn.dataset.q,v=btn.dataset.v;
-      (state.bonus[bid]=state.bonus[bid]||{})[qid]=v;
-      dirtyBonus=true; saveDraftBonus(); scheduleSave("bonus"); renderBonus();
-    });
-    host.appendChild(card);
+    const card=document.createElement("div"); card.className="bcard";
+    let html='<div class="bhead"><span class="bttl">'+(b.opp?"🇳🇴 ":"")+esc(b.title)+'</span><span class="btime">'+t+'</span></div>';
+    b.q.forEach(q=>{ html+='<div class="bq"><div class="bqt">'+esc(q.t)+(bqPts(q)>1?' <span class="bpts">'+bqPts(q)+' p</span>':'')+'</div>'+bonusInput(b,q,mine[q.id])+'</div>'; });
+    html+='<div class="startline">⏱ Stenger ved avspark · '+t+'</div>';
+    card.innerHTML=html; bindBonus(card); host.appendChild(card);
   });
   updateSaveBar();
 }
@@ -976,10 +1020,10 @@ function scoreUser(pick,kopick,bonusPick){
   });
   let bo=0; const bp=(bonusPick&&bonusPick.b)||{};
   BONUS.forEach(b=>{ const fz=(RESULTS.bonus&&RESULTS.bonus[b.id])||{}; const mine=bp[b.id]||{};
-    b.q.forEach(q=>{ const ans=fz[q.id]; if((ans==="yes"||ans==="no")&&mine[q.id]===ans) bo++; }); });
+    b.q.forEach(q=>{ if(bqCorrect(q,mine[q.id],fz[q.id])) bo+=bqPts(q); }); });
   const hasG=Object.values(RESULTS.advance||{}).some(a=>a&&a.length);
   const hasK=Object.values(RESULTS.ko||{}).some(koResolved);
-  const hasB=Object.values(RESULTS.bonus||{}).some(o=>o&&Object.values(o).some(v=>v==="yes"||v==="no"));
+  const hasB=BONUS.some(b=>{ const fz=(RESULTS.bonus&&RESULTS.bonus[b.id])||{}; return b.q.some(q=>bqResolved(q,fz[q.id])); });
   return {total:g+k+bo,g,k,b:bo,gh,kh,hasResults:hasG||hasK||hasB};
 }
 async function loadAllPicks(force){
@@ -1036,9 +1080,9 @@ function openPicks(name,pick,kopick,bonusPick){
   if(shownB.length){
     let bin="", bpts=0;
     shownB.forEach(b=>{ const mine=bp[b.id]||{}; const fz=(RESULTS.bonus&&RESULTS.bonus[b.id])||{};
-      bin+='<div class="pm-bm">🇳🇴 '+esc(b.title)+'</div>';
-      b.q.forEach(q=>{ const ans=fz[q.id]; const rz=(ans==="yes"||ans==="no"); const my=mine[q.id]; const ok=rz&&my&&my===ans; if(ok)bpts++;
-        bin+='<div class="pm-ko"><span class="pm-rnd">'+esc(q.t)+'</span> <b>'+(my?(my==="yes"?"Ja":"Nei"):"(ikke svart)")+'</b>'+(rz?(ok?' <span class="ok">✓</span>':' <span class="bad">✗</span>'):'')+'</div>'; });
+      bin+='<div class="pm-bm">'+(b.opp?"🇳🇴 ":"")+esc(b.title)+'</div>';
+      b.q.forEach(q=>{ const ans=fz[q.id]; const rz=bqResolved(q,ans); const my=mine[q.id]; const ok=bqCorrect(q,my,ans); if(ok)bpts+=bqPts(q);
+        bin+='<div class="pm-ko"><span class="pm-rnd">'+esc(q.t)+'</span> <b>'+(my!=null&&my!==""?esc(bqLabel(b,q,my)):"(ikke svart)")+'</b>'+(rz?(ok?' <span class="ok">✓ +'+bqPts(q)+'</span>':' <span class="bad">✗</span>'):'')+'</div>'; });
     });
     html+='<div class="pm-sec">🇳🇴 Bonus · '+bpts+' poeng</div>'+bin;
   }
@@ -1232,27 +1276,36 @@ function renderAdmin(){
   buildGroups($("#adminGroups"),adminG,(g,n)=>{ if(tog(adminG,g,n)) renderAdmin(); },false);
   renderKoList(); renderAdminKo(); renderAdminBonus(); renderContacts(); renderReminders();
 }
+function adminBonusRow(b,q,v){ const t=bqType(q);
+  const btn=(val,lbl,cls)=>'<button class="bopt'+(cls||"")+(v===val?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-set="'+val+'">'+lbl+'</button>';
+  const open='<button class="bopt'+(!v?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-set="">Åpen</button>';
+  if(t==="pick3") return '<div class="bopts bopts3">'+btn("home",esc(b.home))+btn("none","Ingen")+btn("away",esc(b.away))+open+'</div>';
+  if(t==="ou") return '<div class="bopts">'+btn("over","Over")+btn("under","Under")+open+'</div>';
+  if(t==="score"||t==="scoreHT"){ const m=/^(\d+)-(\d+)$/.exec(v||"");
+    return '<div class="bscore"><input class="bnum afx" type="tel" inputmode="numeric" maxlength="2" data-b="'+b.id+'" data-q="'+q.id+'" data-side="h" value="'+(m?m[1]:"")+'"><span class="bsdash">–</span><input class="bnum afx" type="tel" inputmode="numeric" maxlength="2" data-b="'+b.id+'" data-q="'+q.id+'" data-side="a" value="'+(m?m[2]:"")+'">'+open+'</div>'; }
+  return '<div class="bopts">'+btn("yes","Ja")+btn("no","Nei"," no")+open+'</div>'; }
+function bindAdminBonus(card){
+  card.querySelectorAll(".bopt[data-set]").forEach(btn=>btn.onclick=()=>{
+    const fzz=RESULTS.bonus[btn.dataset.b]=RESULTS.bonus[btn.dataset.b]||{};
+    if(btn.dataset.set==="") delete fzz[btn.dataset.q]; else fzz[btn.dataset.q]=btn.dataset.set;
+    renderAdminBonus();
+  });
+  card.querySelectorAll(".bnum.afx").forEach(inp=>inp.addEventListener("input",()=>{
+    inp.value=inp.value.replace(/\D/g,"").slice(0,2);
+    const fzz=RESULTS.bonus[inp.dataset.b]=RESULTS.bonus[inp.dataset.b]||{};
+    const w=inp.closest(".bscore"); const h=w.querySelector('[data-side="h"]').value,a=w.querySelector('[data-side="a"]').value;
+    if(h!==""&&a!=="") fzz[inp.dataset.q]=h+"-"+a; else delete fzz[inp.dataset.q];
+  }));
+}
 function renderAdminBonus(){
   const host=$("#adminBonus"); if(!host)return; host.innerHTML="";
   RESULTS.bonus=RESULTS.bonus||{};
   BONUS.forEach(b=>{
     const fz=RESULTS.bonus[b.id]=RESULTS.bonus[b.id]||{};
     const card=document.createElement("div"); card.className="bcard";
-    let html='<div class="bhead"><span class="bttl">🇳🇴 '+esc(b.title)+'</span></div>';
-    b.q.forEach(q=>{ const v=fz[q.id];
-      html+='<div class="bq"><div class="bqt">'+esc(q.t)+(q.auto?' <span class="muted">(auto)</span>':'')+'</div><div class="bopts">'+
-        '<button class="bopt'+(v==="yes"?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="yes">Ja</button>'+
-        '<button class="bopt no'+(v==="no"?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="no">Nei</button>'+
-        '<button class="bopt'+(!v?" on":"")+'" data-b="'+b.id+'" data-q="'+q.id+'" data-v="">Åpen</button>'+
-        '</div></div>';
-    });
-    card.innerHTML=html;
-    card.querySelectorAll(".bopt").forEach(btn=>btn.onclick=()=>{
-      const fzz=RESULTS.bonus[btn.dataset.b]=RESULTS.bonus[btn.dataset.b]||{};
-      if(btn.dataset.v==="") delete fzz[btn.dataset.q]; else fzz[btn.dataset.q]=btn.dataset.v;
-      renderAdminBonus();
-    });
-    host.appendChild(card);
+    let html='<div class="bhead"><span class="bttl">'+(b.opp?"🇳🇴 ":"")+esc(b.title)+'</span></div>';
+    b.q.forEach(q=>{ html+='<div class="bq"><div class="bqt">'+esc(q.t)+(q.auto?' <span class="muted">(auto)</span>':'')+(bqPts(q)>1?' <span class="bpts">'+bqPts(q)+' p</span>':'')+'</div>'+adminBonusRow(b,q,fz[q.id])+'</div>'; });
+    card.innerHTML=html; bindAdminBonus(card); host.appendChild(card);
   });
 }
 $("#saveResBonus").onclick=async()=>{ await DB.set("results",RESULTS); flash("Bonus-fasit lagret ✓"); };
