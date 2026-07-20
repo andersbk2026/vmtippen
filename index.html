@@ -255,6 +255,7 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
 .bopt:disabled{opacity:.55;cursor:default}
 .bres{display:inline-block;margin-top:8px;font-size:12px;font-weight:700;color:var(--muted)}
 .bres.ok{color:var(--green)} .bres.bad{color:var(--danger)}
+.bgreen{color:var(--green);font-weight:800}
 .bopts3{display:flex;gap:6px}
 .bopts3 .bopt{font-size:12.5px;padding:9px 2px}
 .bpts{display:inline-block;background:var(--mint);color:var(--green);font-size:11px;font-weight:800;padding:1px 7px;border-radius:999px;margin-left:2px}
@@ -352,7 +353,8 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
   <!-- ===== BONUS ===== -->
   <section id="view-bonus" class="hidden">
     <div class="sec"><h2>🇳🇴 Bonus<span class="serif">spill</span></h2><span class="note">1 poeng pr. riktige</span></div>
-    <div class="banner" style="margin:0 0 12px">Tippe på Norges gruppekamper – ja eller nei. Hvert spill stenger ved avspark. Lagres automatisk, og du kan lagre nederst.</div>
+    <div class="banner" style="margin:0 0 12px">Tippe på Norges kamper og finalen. Hvert spill stenger ved avspark. Lagres automatisk, og du kan lagre nederst.</div>
+    <div class="hint" style="margin:0 0 12px">Ved lik poengsum rangeres den med flest <b>gruppe- og sluttspillpoeng</b> høyest – bonuspoeng teller mindre ved likhet.</div>
     <div id="bonusLogin" class="hidden"><div class="empty"><div class="big">Logg inn for å spille</div>Gå til <b>Tipp</b> og logg inn med mobilnummeret ditt.</div></div>
     <div id="bonusList"></div>
   </section>
@@ -362,6 +364,7 @@ textarea.txt{line-height:1.45;resize:vertical;font-weight:500}
     <div class="sec"><h2>Topp<span class="serif">tabell</span></h2><span class="note" id="lbCount"></span></div>
     <div id="tabellLogin" class="hidden"><div class="empty"><div class="big">Logg inn for å se tabellen</div>Av personvernhensyn vises deltakere og poeng kun for innloggede. Gå til <b>Tipp</b> og logg inn med mobilnummeret ditt.</div></div>
     <div id="tabellBody">
+    <div class="hint" style="margin:0 0 12px">Ved lik poengsum rangeres den med flest <b>gruppe- og sluttspillpoeng</b> høyest – bonuspoeng teller mindre ved likhet.</div>
     <div class="prizes" id="prizes"></div>
     <div id="lbStatus"></div>
     <div id="lbMe" class="lbme hidden"></div>
@@ -1105,14 +1108,14 @@ async function renderTabell(){
   const any=rows.some(r=>r.s.hasResults);
   $("#lbStatus").innerHTML=any?"":'<div class="banner">Resultater ikke lagt inn ennå – tabellen viser hvem som er med.</div>';
   if(!rows.length){ $("#leaderboard").innerHTML='<div class="empty"><div class="big">Ingen deltakere ennå</div>Gå til <b>Tipp</b> og bli den første.</div>'; $("#lbMe").classList.add("hidden"); return; }
-  rows.sort((a,b)=> any?(b.s.total-a.s.total||a.u.name.localeCompare(b.u.name)) : a.u.name.localeCompare(b.u.name));
+  rows.sort((a,b)=> any?(b.s.total-a.s.total || (b.s.g+b.s.k)-(a.s.g+a.s.k) || a.u.name.localeCompare(b.u.name)) : a.u.name.localeCompare(b.u.name));
   const me=state.user?mid(state.user.mobile):"";
   const lb=$("#leaderboard"); lb.innerHTML="";
   let myIdx=-1;
   rows.forEach((r,i)=>{
     const mine=me&&mid(r.u.mobile)===me; if(mine)myIdx=i;
     const row=document.createElement("div"); row.className="row clk"+(any&&i<3?" p"+(i+1):"")+(mine?" you":"");
-    const d = any ? (r.s.g+"p gruppe · "+r.s.k+"p sluttspill"+(r.s.b?(" · "+r.s.b+"p bonus"):"")) : (r.del1done?"klar til kamp":"gjør analyser");
+    const d = any ? (r.s.g+"p gruppe · "+r.s.k+"p sluttspill"+(r.s.b?(' · <span class="bgreen">'+r.s.b+"p bonus</span>"):"")) : (r.del1done?"klar til kamp":"gjør analyser");
     row.innerHTML='<div class="pos">'+(any?(i+1):"•")+'</div>'+
       '<div class="who"><div class="n">'+esc(r.u.name)+(mine?'<span class="badge">DEG</span>':'')+'</div><div class="d">'+d+' ›</div></div>'+
       (any?'<div class="pts">'+r.s.total+'<small>POENG</small></div>':'<div class="pts" style="font-size:14px;color:var(--muted)">Med ✓</div>');
